@@ -1,2 +1,10 @@
+# GENERAL
 .idea/
 __pycache__/
+.env
+
+# AGENTS
+agents/*.json
+
+# Include example agents
+!agents/example.json
