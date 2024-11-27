@@ -1,28 +1,26 @@
 import json
 
+from src.connection_manager import ConnectionManager
+
 
 class ZerePyAgent:
-    def __init__(self, name, llm_provider, llm_model, actions, bio, moderated=True):
+    def __init__(self, name, connection_manager, bio, moderated=True):
         # REQUIRED PARAMETERS
         self.name = name
-        self.llm_provider = llm_provider
-        self.llm_model = llm_model
-        self.actions = actions
+        self.connection_manager = connection_manager
         self.bio = bio
         self.moderated = moderated
-
-        # OPTIONAL PARAMETERS
 
     def loop(self):
         # TODO: RUN AGENT LOOP
         pass
 
-    def action(self):
+    def perform_action(self, action, **kwargs):
         # TODO: RUN A SINGLE AGENT ACTION
         pass
 
 
-def load_agent_from_file(agent_path: str) -> ZerePyAgent:
+def load_agent_from_file(agent_path: str, connection_manager: ConnectionManager) -> ZerePyAgent:
     try:
         # Get agent fields from json file
         agent_dict = json.load(open(agent_path, "r"))
@@ -30,10 +28,7 @@ def load_agent_from_file(agent_path: str) -> ZerePyAgent:
         # Create agent object
         agent = ZerePyAgent(
             name=agent_dict["name"],
-            llm_provider=agent_dict["llm_provider"],
-            llm_model=agent_dict["llm_model"],
-            dependencies=agent_dict["dependencies"],
-            actions=agent_dict["actions"],
+            connection_manager=connection_manager,
             bio=agent_dict["bio"],
             moderated=agent_dict["moderated"]
         )
@@ -48,7 +43,9 @@ def load_agent_from_file(agent_path: str) -> ZerePyAgent:
 
 def create_agent_file_from_dict(agent_dict: dict):
     try:
-        # Save agent dict to json file
-        json.dump(agent_dict, open(f"agents/{agent_dict['name']}.json", "w"), indent=4)
+        # Create agent file
+        with open(f"agents/{agent_dict['name']}.json", "w") as file:
+            # Save agent dict to json file
+            json.dump(agent_dict, file, indent=4)
     except Exception as e:
         raise Exception(f"An error occurred while creating the agent file: {e}")

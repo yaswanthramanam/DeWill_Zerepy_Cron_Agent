@@ -1,7 +1,12 @@
 # GENERAL
 .idea/
 __pycache__/
+.vscode/
+*.py~
+
+# CONFIG FILES
 .env
+twitter_config.json
 
 # AGENTS
 agents/*.json

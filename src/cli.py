@@ -1,34 +1,27 @@
 import os
 import sys
 from src.agent import load_agent_from_file
+from src.helpers import print_h_bar
+import json
+from requests_oauthlib import OAuth1Session
+import logging
+from dotenv import load_dotenv, set_key
+from src.connection_manager import ConnectionManager
+
 
 class ZerePyCLI:
     def __init__(self):
-        print("Initializing...")
-
-        # TODO: Check if CLI is already setup (.env file exists, API/Auth tokens exist)
-        # Add the proper capabilities for the CLI (this will be used to check if an agent's actions are supported)
 
         # Initialize CLI parameters
-        self.setup = False
         self.agent = None
-        self.capabilities = []
+        self.connection_manager = ConnectionManager()
         self.commands = {
             "help": {
                 "command": "help",
                 "description": "Displays a list of all available commands, or the help for a specific command.",
-                "tips": ["Try 'help' to see available commands.", "Try 'help {command}' to get more information about a specific command (e.g. 'help load-agent')."],
+                "tips": ["Try 'help' to see available commands.",
+                         "Try 'help {command}' to get more information about a specific command (e.g. 'help load-agent')."],
                 "func": self.help
-            },
-            "setup-cli": {
-                "command": "setup-cli",
-                "description": "Sets up the ZerePy CLI for the first time.",
-                "tips": [
-                    "If you are planning to use an OpenAI LLM, you will be asked to enter your OpenAI API key.",
-                    "If you are planning to use an Anthropic LLM, you will be asked to enter your Anthropic API key.",
-
-                ],
-                "func": self.setup_cli
             },
             "agent-action": {
                 "command": "agent-action",
@@ -51,7 +44,8 @@ class ZerePyCLI:
             "load-agent": {
                 "command": "load-agent",
                 "description": "Loads an agent from a file.",
-                "tips": ["You can list all available agents with the 'list-agents' command.", "You do not need to specify the '.json' extension."],
+                "tips": ["You can list all available agents with the 'list-agents' command.",
+                         "You do not need to specify the '.json' extension."],
                 "func": self.load_agent
             },
             "exit": {
@@ -68,51 +62,56 @@ class ZerePyCLI:
             },
             "list-actions": {
                 "command": "list-actions",
-                "description": "Lists all available actions for the current agent.",
+                "description": "Lists all available actions for the given connection.",
                 "tips": [
-                    "This will also show whether each action is supported by the CLI.",
-                    "If an action is supported, you can use it with the 'agent-action' command.",
-                    # TODO: FIGURE OUT HOW TO HANDLE UNSUPPORTED ACTIONS
-                    "If an action is not supported, you can use ???."
+                    "You must give the name of a connection like so: 'list-actions twitter'.",
+                    "You can use the 'list-connections' command to see all available connections."
                 ],
                 "func": self.list_actions
             },
-
+            "configure-connection": {
+                "command": "configure-connection",
+                "description": "Sets up the given connection.",
+                "tips": [
+                    # TODO: FIX THE TIPS
+                    "You will need your Twitter API consumer key and secret.",
+                    "You will be guided through the OAuth process.",
+                    "Your credentials will be saved for future use."
+                ],
+                "func": self.configure_connection
+            },
+            "list-connections": {
+                "command": "list-connections",
+                "description": "Lists all available connections (configured or not).",
+                "tips": [],
+                "func": self.list_connections
+            }
         }
 
         # Start CLI
         self.main_loop()
 
     def main_loop(self):
-        # Send welcome message
-        self.print_h_bar()
+        # Send welcome message first
+        print_h_bar()
         print("👋 Hello! Welcome to the ZerePy CLI!")
-        self.print_h_bar()
-        print("- You can use the 'help' command at any time to see what commands you can use.")
-        print("- You can also use 'help {command}' to get more information about a specific command.")
-        self.print_h_bar()
-
-        # If CLI is not setup, ask for API key
-        if not self.setup:
-            print("⚠️ IF THIS IS YOUR FIRST TIME USING THE CLI: ")
-            print("- Please run the 'setup-cli' command to set up the CLI for the first time.")
-            print("- You will be asked to enter your OpenAI API key.")
-            self.print_h_bar()
+        # Check connections status once at startup
+        self.list_connections([])
+        print_h_bar()
 
         # MAIN CLI LOOP
         while True:
             # PROMPT USER FOR INPUT
-            if self.setup:
-                if self.agent is None:
-                    input_string = input("ZerePy-CLI (no agent) > ")
-                else:
-                    current_agent_name = self.agent.name
-                    input_string = input(f"ZerePy-CLI ({current_agent_name}) > ")
+            if self.agent is None:
+                input_string = input("ZerePy-CLI (no agent) > ")
             else:
-                input_string = input("ZerePy-CLI (not setup) > ")
+                current_agent_name = self.agent.name
+                input_string = input(f"ZerePy-CLI ({current_agent_name}) > ")
 
             # GET COMMAND FROM INPUT
             input_list = input_string.split()
+            if not input_list:  # Handle empty input
+                continue
             command_string = str(input_list[0])
 
             # RUN COMMAND
@@ -120,18 +119,15 @@ class ZerePyCLI:
                 # Match command string to a supported command
                 command_dict = self.commands[command_string]
                 command_func = command_dict["func"]
-
-                # Execute command function
+                # Run command function
                 command_func(input_list)
-            except IndexError:
-                print("\nUnknown command. Try 'help' to see available commands.")
             except KeyError:
                 print("\nUnknown command. Try 'help' to see available commands.")
             except Exception as e:
                 print(f"\nAn error occurred: {e}")
 
             # ADD SEPARATOR BEFORE NEXT COMMAND
-            self.print_h_bar()
+            print_h_bar()
 
     def help(self, input_list):
         # GET HELP ARGUMENT STRING
@@ -175,24 +171,7 @@ class ZerePyCLI:
             print("\nDOCS: https://zerepy.com/docs")
 
     def exit(self, input_list):
-        # TODO: ANY CLEANUP
         sys.exit()
-
-    def setup_cli(self, input_list):
-        # Check if CLI is already setup
-        if self.setup:
-            print("\nCLI is already setup. Running the setup again will override your configuration.")
-            response = input("Do you want to continue? (y/n) ")
-            if response.lower() == "y":
-                self.setup = False
-            else:
-                return
-
-        # TODO:SET UP THE CLI THROUGH INTERACTIVE WIZARD
-        self.setup = True
-
-        print("\n✅ SUCCESFULLY SET UP CLI! YOU CAN NOW USE THE CLI TO MANAGE AGENTS!")
-        print("You can use the:\n- 'list-agents' command to see all available agents on file\n- 'load-agent' command to load an agent from file\n- 'create-agent' command to create a new agent.")
 
     def agent_action(self, input_list):
         # Check if agent is loaded
@@ -208,27 +187,28 @@ class ZerePyCLI:
         # Get action from input
         action = input_list[1]
 
-        # Check if action is valid
-        if action not in self.agent.actions:
-            print("Unknown action. Try 'help' to see available actions.")
-            return
-
         # Run action
         try:
-            self.agent.action(input_list[1:])
+            self.agent.perform_action(action, input_list)
         except Exception as e:
             print(f"An error occurred while running the action: {e}")
 
     def agent_loop(self, input_list):
         print("\n🔂 STARTING AGENT LOOP...")
+        # TODO: IMPLEMENT AGENT LOOP
         pass
 
     def list_agents(self, input_list):
         # List all available agents in the 'agents' directory
         print("\nAVAILABLE AGENTS:")
+        agents = 0
         for file in os.listdir("agents"):
             if file.endswith(".json"):
                 print(f"- {file.removesuffix('.json')}")
+                agents += 1
+
+        if agents == 0:
+            print("No agents found. You can use the 'create-agent' command to create a new agent.")
 
     def load_agent(self, input_list):
         # Get agent name from input
@@ -238,7 +218,10 @@ class ZerePyCLI:
 
         # Load agent
         try:
-            self.agent = load_agent_from_file(f"agents/{input_list[1].removesuffix('.json')}.json")
+            self.agent = load_agent_from_file(
+                agent_path=f"agents/{input_list[1].removesuffix('.json')}.json",
+                connection_manager=self.connection_manager
+            )
         except FileNotFoundError:
             print("Agent file not found. You can use the 'list-agents' command to see all available agents.")
         except KeyError:
@@ -247,20 +230,23 @@ class ZerePyCLI:
             print(f"An error occurred while loading the agent: {e}")
 
         print(f"\n✅ SUCCESSFULLY LOADED AGENT: {self.agent.name}")
-        print("Verifying agent actions...")
-
-        # TODO: Verify that the CLI has the right dependencies for the agent
 
     def create_agent(self, input_list):
         # TODO: CREATE A NEW AGENT THROUGH INTERACTIVE WIZARD
         pass
 
     def list_actions(self, input_list):
-        # List all available actions in the 'actions' directory
-        print("\nAVAILABLE ACTIONS:")
-        for action in self.agent.actions:
-            # TODO: Check whether action is supported by the CLI
-            print(f"- {action}")
+        # TODO: LIST ALL AVAILABLE ACTIONS FOR THE GIVEN CONNECTION
+        pass
 
-    def print_h_bar(self):
-        print("--------------------------------------------------------------------")
+    def list_connections(self, input_list):
+        self.connection_manager.list_connections()
+
+    def configure_connection(self, input_list):
+        if len(input_list) < 2:
+            print("Please specify a connection to configure. You can use the 'list-connections' command to see all supported connections.")
+            return
+
+        connection_string = input_list[1]
+
+        self.connection_manager.configure_connection(connection_string=connection_string)

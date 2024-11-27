@@ -1,16 +1,6 @@
 {
-  "name": "Example Agent",
-  "llm_provider": "openai",
-  "llm_model": "gpt-3.5-turbo",
-  "actions": [
-    "post_tweet",
-    "reply_to_tweet",
-    "like_tweet",
-    "retweet_tweet",
-    "read_timeline",
-    "read_user_tweets"
-  ],
-  "dependencies": ["openai", "twitter"],
+  "name": "ExamplBro",
+  "model": "gpt-3.5-turbo",
   "bio": "This is an example agent that uses OpenAI's GPT-3.5-turbo model to generate responses.",
   "moderated": true
 }
