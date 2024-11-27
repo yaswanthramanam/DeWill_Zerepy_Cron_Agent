@@ -105,6 +105,7 @@ class TwitterConnection(BaseConnection):
             return
 
     def is_configured(self) -> bool:
+        # TODO: Check if API works
         return os.path.exists('twitter_config.json')
 
     def list_actions(self):

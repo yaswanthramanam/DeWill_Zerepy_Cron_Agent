@@ -1,12 +1,11 @@
 import json
-
 from src.connection_manager import ConnectionManager
 
 
 class ZerePyAgent:
-    def __init__(self, name, connection_manager, bio, moderated=True):
-        # REQUIRED PARAMETERS
+    def __init__(self, name, model, connection_manager, bio, moderated=True):
         self.name = name
+        self.model = model
         self.connection_manager = connection_manager
         self.bio = bio
         self.moderated = moderated
@@ -19,6 +18,14 @@ class ZerePyAgent:
         # TODO: RUN A SINGLE AGENT ACTION
         pass
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "model": self.model,
+            "bio": self.bio,
+            "moderated": self.moderated
+        }
+
 
 def load_agent_from_file(agent_path: str, connection_manager: ConnectionManager) -> ZerePyAgent:
     try:
@@ -28,6 +35,7 @@ def load_agent_from_file(agent_path: str, connection_manager: ConnectionManager)
         # Create agent object
         agent = ZerePyAgent(
             name=agent_dict["name"],
+            model=agent_dict["model"],
             connection_manager=connection_manager,
             bio=agent_dict["bio"],
             moderated=agent_dict["moderated"]

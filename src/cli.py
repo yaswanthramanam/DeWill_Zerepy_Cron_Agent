@@ -65,18 +65,19 @@ class ZerePyCLI:
                 "description": "Lists all available actions for the given connection.",
                 "tips": [
                     "You must give the name of a connection like so: 'list-actions twitter'.",
-                    "You can use the 'list-connections' command to see all available connections."
+                    "You can use the 'list-connections' command to see all available connections.",
+                    "This command will also tell you if the connection is configured or not."
                 ],
                 "func": self.list_actions
             },
             "configure-connection": {
                 "command": "configure-connection",
-                "description": "Sets up the given connection.",
+                "description": "Sets up the given connection so that your agents can use the API.",
                 "tips": [
-                    # TODO: FIX THE TIPS
-                    "You will need your Twitter API consumer key and secret.",
-                    "You will be guided through the OAuth process.",
-                    "Your credentials will be saved for future use."
+                    "Each connection requires a different set of credentials. You will be prompted for the necessary credentials.",
+                    "You must give the name of a connection like so: 'configure-connection twitter'.",
+                    "You can use the 'list-connections' command to see all available connections.",
+                    "Your credentials will be saved to local files for future use. That way you only have to set up each connection once."
                 ],
                 "func": self.configure_connection
             },
@@ -213,7 +214,7 @@ class ZerePyCLI:
     def load_agent(self, input_list):
         # Get agent name from input
         if len(input_list) < 2:
-            print("Please specify an agent name.")
+            print("Please specify an agent name. You can see all available agent names with the 'list-agents' command.")
             return
 
         # Load agent
@@ -236,17 +237,26 @@ class ZerePyCLI:
         pass
 
     def list_actions(self, input_list):
-        # TODO: LIST ALL AVAILABLE ACTIONS FOR THE GIVEN CONNECTION
-        pass
+        if len(input_list) < 2:
+            print("\nPlease specify a connection. You can use the 'list-connections' command to see all supported connections.")
+            return
+
+        # Get connection name from input
+        connection_string = input_list[1]
+
+        # Configure connection
+        self.connection_manager.list_actions(connection_string=connection_string)
 
     def list_connections(self, input_list):
         self.connection_manager.list_connections()
 
     def configure_connection(self, input_list):
         if len(input_list) < 2:
-            print("Please specify a connection to configure. You can use the 'list-connections' command to see all supported connections.")
+            print("\nPlease specify a connection to configure. You can use the 'list-connections' command to see all supported connections.")
             return
 
+        # Get connection name from input
         connection_string = input_list[1]
 
+        # Configure connection
         self.connection_manager.configure_connection(connection_string=connection_string)

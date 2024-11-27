@@ -34,10 +34,25 @@ class ConnectionManager:
             else:
                 print(f"- {connection_key} : ❌ Not Configured")
 
-    def list_actions(self):
-        print("\nAVAILABLE ACTIONS:")
-        for connection_key, connection in self.connections:
-            connection.list_actions()
+    def list_actions(self, connection_string):
+        try:
+            # Match connection string to a supported connection
+            connection = self.connections[connection_string]
+
+            # Tell the user whether the connection is configured or not
+            if connection.is_configured():
+                print(f"\n✅ {connection_string} is configured. You can use any of its actions.")
+            else:
+                print(f"\n❌ {connection_string} is not configured. You must configure a connection in order to use its actions.")
+
+            # List available actions
+            print("\nAVAILABLE ACTIONS:")
+            for action in connection.actions:
+                print(f"- {action}: {connection.actions[action]}")
+        except KeyError:
+            print("\nUnknown connection. Try 'list-connections' to see all supported connections.")
+        except Exception as e:
+            print(f"\nAn error occurred: {e}")
 
     def is_action_supported(self, action):
         # TODO: Check if action is supported

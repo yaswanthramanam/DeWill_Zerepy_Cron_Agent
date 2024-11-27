@@ -1,11 +1,14 @@
 import os
-
 from dotenv import load_dotenv, set_key
-
 from src.connections.base_connection import BaseConnection
 from src.helpers import print_h_bar
 
 class OpenAIConnection(BaseConnection):
+    def __init__(self):
+        super().__init__()
+        self.actions={
+            "generate_text": {"prompt": "str"},
+        }
 
     def configure(self):
         """Sets up OpenAI API authentication"""
@@ -43,12 +46,21 @@ class OpenAIConnection(BaseConnection):
 
     def is_configured(self) -> bool:
         """Checks if OpenAI API key is configured"""
+        # TODO: Check if API works
         load_dotenv()
         return bool(os.getenv('OPENAI_API_KEY'))
 
     def list_actions(self):
-        # TODO: Implement actions
-        pass
+        # Tell the user whether the connection is configured or not
+        if self.is_configured():
+            print("\n✅ OpenAI API is configured. You can use any of its actions.")
+        else:
+            print("\n❌ OpenAI API is not configured. You must configure a connection in order to use its actions.")
+
+        # List available actions
+        print("\nAVAILABLE ACTIONS:")
+        for action in self.actions:
+            print(f"- {action}: {self.actions[action]}")
 
     def perform_action(self, action_name, **kwargs):
         # TODO: Implement actions
