@@ -2,12 +2,14 @@ import os
 from dotenv import load_dotenv, set_key
 from src.connections.base_connection import BaseConnection
 from src.helpers import print_h_bar
+import openai
+from openai import OpenAI
 
 class OpenAIConnection(BaseConnection):
     def __init__(self):
         super().__init__()
         self.actions={
-            "generate_text": {"prompt": "str"},
+            "generate_text": {"prompt": "str", "system_prompt": "str"},
         }
 
     def configure(self):
@@ -45,22 +47,26 @@ class OpenAIConnection(BaseConnection):
             return
 
     def is_configured(self) -> bool:
-        """Checks if OpenAI API key is configured"""
-        # TODO: Check if API works
+        """Checks if OpenAI API key is configured and valid"""
         load_dotenv()
-        return bool(os.getenv('OPENAI_API_KEY'))
-
-    def list_actions(self):
-        # Tell the user whether the connection is configured or not
-        if self.is_configured():
-            print("\n✅ OpenAI API is configured. You can use any of its actions.")
-        else:
-            print("\n❌ OpenAI API is not configured. You must configure a connection in order to use its actions.")
-
-        # List available actions
-        print("\nAVAILABLE ACTIONS:")
-        for action in self.actions:
-            print(f"- {action}: {self.actions[action]}")
+        api_key = os.getenv('OPENAI_API_KEY')
+        
+        if not api_key:
+            return False
+            
+        try:
+            # Initialize the client
+            client = OpenAI(api_key=api_key)
+            
+            # Try to make a minimal API call to validate the key
+            response = client.models.list()
+            
+            # If we get here, the API key is valid
+            return True
+            
+        except Exception as e:
+            print("❌ There was an error validating your OpenAI credentials:", e)
+            return False
 
     def perform_action(self, action_name, **kwargs):
         # TODO: Implement actions

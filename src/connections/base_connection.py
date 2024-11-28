@@ -18,16 +18,6 @@ class BaseConnection(ABC):
         pass
 
     @abstractmethod
-    def list_actions(self):
-        """
-        List all actions this connection can perform, including the required data
-        for each action.
-        Returns:
-            dict: {action_name: required_parameters}
-        """
-        pass
-
-    @abstractmethod
     def perform_action(self, action_name, **kwargs):
         """
         Perform an action supported by this connection.

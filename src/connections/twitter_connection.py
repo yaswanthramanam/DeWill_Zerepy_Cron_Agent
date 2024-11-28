@@ -3,6 +3,7 @@ import os
 from requests_oauthlib import OAuth1Session
 from src.connections.base_connection import BaseConnection
 from src.helpers import print_h_bar
+import tweepy
 
 class TwitterConnection(BaseConnection):
     def __init__(self):
@@ -105,12 +106,39 @@ class TwitterConnection(BaseConnection):
             return
 
     def is_configured(self) -> bool:
-        # TODO: Check if API works
-        return os.path.exists('twitter_config.json')
-
-    def list_actions(self):
-        # TODO: List actions
-        pass
+        """Checks if Twitter credentials are configured and valid"""
+        if not os.path.exists('twitter_config.json'):
+            return False
+            
+        try:
+            # Load the config file
+            with open('twitter_config.json', 'r') as f:
+                config = json.load(f)
+                
+            if not config.get('accounts'):
+                return False
+                
+            # Get the first account's credentials
+            account = next(iter(config['accounts'].values()))
+            
+            # Initialize tweepy client
+            client = tweepy.Client(
+                consumer_key=account['consumer_key'],
+                consumer_secret=account['consumer_secret'],
+                access_token=account['access_token'],
+                access_token_secret=account['access_token_secret']
+            )
+            
+            # Try to make a minimal API call to validate credentials
+            # Get the authenticated user's information
+            client.get_me()
+            
+            # If we get here, the credentials are valid
+            return True
+            
+        except Exception as e:
+            print("❌ There was an error validating your Twitter credentials:", e)
+            return False
 
     def perform_action(self, action_name, **kwargs):
         # TODO: Implement actions

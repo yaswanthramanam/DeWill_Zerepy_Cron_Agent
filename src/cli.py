@@ -2,10 +2,6 @@ import os
 import sys
 from src.agent import load_agent_from_file
 from src.helpers import print_h_bar
-import json
-from requests_oauthlib import OAuth1Session
-import logging
-from dotenv import load_dotenv, set_key
 from src.connection_manager import ConnectionManager
 
 
