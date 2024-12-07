@@ -17,7 +17,7 @@ class OpenAIConnection(BaseConnection):
         print("\n🤖 OPENAI API SETUP")
 
         # Check if already configured
-        if self.is_configured():
+        if self.is_configured(verbose=False):
             print("\nOpenAI API is already configured.")
             response = input("Do you want to reconfigure? (y/n): ")
             if response.lower() != 'y':
@@ -46,15 +46,20 @@ class OpenAIConnection(BaseConnection):
             print(f"\n❌ An error occurred during setup: {str(e)}")
             return
 
-    def is_configured(self) -> bool:
+    def is_configured(self, verbose=True) -> bool:
         """Checks if OpenAI API key is configured and valid"""
-        load_dotenv()
-        api_key = os.getenv('OPENAI_API_KEY')
-        
-        if not api_key:
+        if not os.path.exists('.env'):
             return False
-            
+
         try:
+            # Load env file variables
+            load_dotenv()
+            api_key = os.getenv('OPENAI_API_KEY')
+
+            # Check if values present
+            if not api_key:
+                return False
+
             # Initialize the client
             client = OpenAI(api_key=api_key)
             
@@ -65,7 +70,8 @@ class OpenAIConnection(BaseConnection):
             return True
             
         except Exception as e:
-            print("❌ There was an error validating your OpenAI credentials:", e)
+            if verbose:
+                print("❌ There was an error validating your OpenAI credentials:", e)
             return False
 
     def perform_action(self, action_name, **kwargs):

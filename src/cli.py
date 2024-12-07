@@ -7,7 +7,6 @@ from src.connection_manager import ConnectionManager
 
 class ZerePyCLI:
     def __init__(self):
-
         # Initialize CLI parameters
         self.agent = None
         self.connection_manager = ConnectionManager()
@@ -22,7 +21,9 @@ class ZerePyCLI:
             "agent-action": {
                 "command": "agent-action",
                 "description": "Runs a single agent action.",
-                "tips": [],
+                "tips": ["You must give the name of a connection and an action like so: 'agent-action {connection} {action}'.",
+                         "You can use the 'list-connections' command to see all available connections.",
+                         "You can use the 'list-actions' command to see all available actions for a given connection."],
                 "func": self.agent_action
             },
             "agent-loop": {
@@ -176,24 +177,47 @@ class ZerePyCLI:
             print("No agent is currently loaded. You can use the 'load-agent' command to load an agent.")
             return
 
-        # Check if user has specified an action
-        if len(input_list) < 2:
-            print("Please specify an action.")
+        # Check if user has specified an action and connection
+        if len(input_list) < 3:
+            print("Please specify both a connection and an action. e.g. 'agent-action twitter post-tweet'")
             return
 
+        # Get connection from input
+        connection_string = input_list[1]
+
         # Get action from input
-        action = input_list[1]
+        action_string = input_list[2]
+
+        # Check if connection is configured
+        if not self.connection_manager.check_connection(connection_string):
+            print(f"Connection '{connection_string}' is not configured. You can use the 'configure-connection' command to configure a connection.")
+            return
 
         # Run action
         try:
-            self.agent.perform_action(action, input_list)
+            result = self.agent.perform_action(action_string=action_string, connection_string=connection_string, input_list = input_list)
+            print("RESULT:", result)
         except Exception as e:
             print(f"An error occurred while running the action: {e}")
 
     def agent_loop(self, input_list):
-        print("\n🔂 STARTING AGENT LOOP...")
-        # TODO: IMPLEMENT AGENT LOOP
-        pass
+        # Check if agent is loaded
+        if self.agent is None:
+            print("No agent is currently loaded. You can use the 'load-agent' command to load an agent.")
+            return
+
+        print("\n🚀 STARTING AGENT LOOP...")
+        print("Press Ctrl+C at any time to stop the autonomous loop.")
+        print_h_bar()
+
+        try:
+            self.agent.loop()
+        except KeyboardInterrupt:
+            print("\n🛑 AGENT LOOP STOPPED BY USER.")
+
+    def exit_loop(self, input_list):
+        print("\n🛑 STOPPING AGENT LOOP...")
+        self.agent.stop()
 
     def list_agents(self, input_list):
         # List all available agents in the 'agents' directory

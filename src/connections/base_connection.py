@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 
 class BaseConnection(ABC):
 
+    def __init__(self):
+        self.actions = {}
+
     @abstractmethod
     def configure(self, **kwargs):
         """
@@ -18,7 +21,7 @@ class BaseConnection(ABC):
         pass
 
     @abstractmethod
-    def perform_action(self, action_name, **kwargs):
+    def perform_action(self, action_name: str, **kwargs):
         """
         Perform an action supported by this connection.
         Args:
@@ -27,4 +30,10 @@ class BaseConnection(ABC):
         Returns:
             Any: The result of the action.
         """
-        pass
+        for action in self.actions.keys():
+            if action_name == action:
+                # Run action function
+                result = self.actions[action](self, **kwargs)
+                return result
+
+        raise Exception(f"Unknown action: {action_name}")
