@@ -223,7 +223,14 @@ Create a new JSON file in the `agents` directory following this structure:
     {
       "name": "galadriel",
       "model": "gpt-3.5-turbo"
+    },
+    {
+      "name": "discord",
+      "message_read_count": 10,
+      "message_emoji_name": "❤️",
+      "server_id": "1327792083599228968"
     }
+
   ],
   "tasks": [
     { "name": "post-tweet", "weight": 1 },
