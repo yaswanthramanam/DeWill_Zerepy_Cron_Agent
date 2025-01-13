@@ -12,6 +12,7 @@ similar core functionality as Zerebro. For creative outputs, you'll need to fine
 - CLI interface for managing agents
 - Modular connection system
 - Blockchain integration with Solana
+- HTTP server mode with REST API
 
 ### Social Platform Integrations
 
@@ -42,7 +43,7 @@ https://replit.com/@blormdev/ZerePy?v=1
 
 System:
 
-- Python 3.10 or higher (3.10 and 3.11 are best for beginner users)
+- Python 3.10 or higher
 - Poetry 1.5 or higher
 
 Environment Variables:
@@ -81,13 +82,21 @@ cd zerepy
 
 4. Install dependencies:
 
+For CLI mode only:
+
 ```bash
 poetry install --no-root
 ```
 
-This will create a virtual environment and install all required dependencies.
+For server mode support:
+
+```bash
+poetry install --extras server --no-root
+```
 
 ## Usage
+
+### CLI Mode
 
 1. Activate the virtual environment:
 
@@ -101,32 +110,92 @@ poetry shell
 poetry run python main.py
 ```
 
+### Server Mode
+
+ZerePy can also run as an HTTP server, providing a REST API for remote agent management and automation. This is particularly useful for integration with other services or building custom UIs.
+
+1. Start the server:
+
+```bash
+poetry run python main.py --server
+```
+
+Optional parameters:
+
+--host: Server host (default: 0.0.0.0)
+--port: Server port (default: 8000)
+
+2. Using the Python Client:
+
+```python
+from src.client import ZerePyClient
+
+# Initialize client
+client = ZerePyClient("http://localhost:8000")
+
+# Check server status
+status = client.get_status()
+
+# List available agents
+agents = client.list_agents()
+
+# Load an agent
+client.load_agent("example")
+
+# List connections
+connections = client.list_connections()
+
+# Perform an action
+result = client.perform_action("twitter", "post-tweet", ["Hello from ZerePy!"])
+
+# Start/stop agent loop
+client.start_agent()
+client.stop_agent()
+```
+
+3. Testing with cURL:
+
+Check server status:
+
+```bash
+curl http://localhost:8000/
+```
+
 ## Configure connections & launch an agent
+
+### Note: configuring connections in server mode will consist of preparing the appropriate portinos of the .env file, as we will not have step-by-step cli config method
 
 1. Configure your desired connections:
 
-   ```
-   configure-connection twitter    # For Twitter/X integration
-   configure-connection openai     # For OpenAI
-   configure-connection anthropic  # For Anthropic
-   configure-connection farcaster  # For Farcaster
-   configure-connection eternalai  # For EternalAI
-   configure-connection galadriel  # For Galadriel
-   configure-connection solana     # For Solana
-   ```
+```
+
+configure-connection twitter # For Twitter/X integration
+configure-connection openai # For OpenAI
+configure-connection anthropic # For Anthropic
+configure-connection farcaster # For Farcaster
+configure-connection eternalai # For EternalAI
+configure-connection galadriel # For Galadriel
+configure-connection solana # For Solana
+
+```
 
 2. Use `list-connections` to see all available connections and their status
 
 3. Load your agent (usually one is loaded by default, which can be set using the CLI or in agents/general.json):
 
-   ```
-   load-agent example
-   ```
+```
+
+load-agent example
+
+```
 
 4. Start your agent:
-   ```
-   start
-   ```
+
+```
+
+start
+
+```
 
 ## Platform Features
 
@@ -172,69 +241,69 @@ Create a new JSON file in the `agents` directory following this structure:
 
 ```json
 {
-  "name": "ExampleAgent",
-  "bio": [
-    "You are ExampleAgent, the example agent created to showcase the capabilities of ZerePy.",
-    "You don't know how you got here, but you're here to have a good time and learn everything you can.",
-    "You are naturally curious, and ask a lot of questions."
-  ],
-  "traits": ["Curious", "Creative", "Innovative", "Funny"],
-  "examples": ["This is an example tweet.", "This is another example tweet."],
-  "example_accounts" : ["X_username_to_use_for_tweet_examples"]
-  "loop_delay": 900,
-  "config": [
-    {
-      "name": "twitter",
-      "timeline_read_count": 10,
-      "own_tweet_replies_count": 2,
-      "tweet_interval": 5400
-    },
-    {
-      "name": "farcaster",
-      "timeline_read_count": 10,
-      "cast_interval": 60
-    },
-    {
-      "name": "openai",
-      "model": "gpt-3.5-turbo"
-    },
-    {
-      "name": "anthropic",
-      "model": "claude-3-5-sonnet-20241022"
-    },
-    {
-      "name": "eternalai",
-      "model": "NousResearch/Hermes-3-Llama-3.1-70B-FP8",
-      "chain_id": "45762"
-    },
-    {
-      "name": "solana",
-      "rpc": "https://api.mainnet-beta.solana.com"
-    },
-    {
-      "name": "ollama",
-      "base_url": "http://localhost:11434",
-      "model": "llama3.2"
-    },
-    {
-      "name": "hyperbolic",
-      "model": "meta-llama/Meta-Llama-3-70B-Instruct"
-    },
-    {
-      "name": "galadriel",
-      "model": "gpt-3.5-turbo"
-    }
-  ],
-  "tasks": [
-    { "name": "post-tweet", "weight": 1 },
-    { "name": "reply-to-tweet", "weight": 1 },
-    { "name": "like-tweet", "weight": 1 }
-  ],
-  "use_time_based_weights": false,
-  "time_based_multipliers": {
-    "tweet_night_multiplier": 0.4,
-    "engagement_day_multiplier": 1.5
-  }
+"name": "ExampleAgent",
+"bio": [
+ "You are ExampleAgent, the example agent created to showcase the capabilities of ZerePy.",
+ "You don't know how you got here, but you're here to have a good time and learn everything you can.",
+ "You are naturally curious, and ask a lot of questions."
+],
+"traits": ["Curious", "Creative", "Innovative", "Funny"],
+"examples": ["This is an example tweet.", "This is another example tweet."],
+"example_accounts" : ["X_username_to_use_for_tweet_examples"]
+"loop_delay": 900,
+"config": [
+ {
+   "name": "twitter",
+   "timeline_read_count": 10,
+   "own_tweet_replies_count": 2,
+   "tweet_interval": 5400
+ },
+ {
+   "name": "farcaster",
+   "timeline_read_count": 10,
+   "cast_interval": 60
+ },
+ {
+   "name": "openai",
+   "model": "gpt-3.5-turbo"
+ },
+ {
+   "name": "anthropic",
+   "model": "claude-3-5-sonnet-20241022"
+ },
+ {
+   "name": "eternalai",
+   "model": "NousResearch/Hermes-3-Llama-3.1-70B-FP8",
+   "chain_id": "45762"
+ },
+ {
+   "name": "solana",
+   "rpc": "https://api.mainnet-beta.solana.com"
+ },
+ {
+   "name": "ollama",
+   "base_url": "http://localhost:11434",
+   "model": "llama3.2"
+ },
+ {
+   "name": "hyperbolic",
+   "model": "meta-llama/Meta-Llama-3-70B-Instruct"
+ },
+ {
+   "name": "galadriel",
+   "model": "gpt-3.5-turbo"
+ }
+],
+"tasks": [
+ { "name": "post-tweet", "weight": 1 },
+ { "name": "reply-to-tweet", "weight": 1 },
+ { "name": "like-tweet", "weight": 1 }
+],
+"use_time_based_weights": false,
+"time_based_multipliers": {
+ "tweet_night_multiplier": 0.4,
+ "engagement_day_multiplier": 1.5
+}
 }
 ```
 
