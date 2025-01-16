@@ -8,7 +8,7 @@ from pathlib import Path
 from src.cli import ZerePyCLI
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("server/app")
 
 class ActionRequest(BaseModel):
     """Request model for agent actions"""
