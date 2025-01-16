@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 from dotenv import load_dotenv, set_key
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
+from src.constants.abi import ERC20_ABI, SONIC_ABI
 from src.connections.base_connection import BaseConnection, Action, ActionParameter
 
 logger = logging.getLogger("connections.sonic_connection")
@@ -215,39 +216,54 @@ class SonicConnection(BaseConnection):
             private_key = os.getenv('SONIC_PRIVATE_KEY')
             account = self._web3.eth.account.from_key(private_key)
 
-            router_address = "0x..." # Add actual router address 
+            # First, check balances and approvals
+            token_contract_in = self._web3.eth.contract(
+                address=Web3.to_checksum_address(token_in),
+                abi=ERC20_ABI
+            )
+
+            # Check token balance
+            balance = token_contract_in.functions.balanceOf(account.address).call()
+            decimals = token_contract_in.functions.decimals().call()
+            amount_in = int(amount * (10 ** decimals))
+
+            logger.info(f"Wallet Balance: {balance / (10 ** decimals)}")
+            logger.info(f"Swap Amount: {amount}")
+
+            if balance < amount_in:
+                raise ValueError(f"Insufficient balance. Required: {amount}, Available: {balance / (10 ** decimals)}")
+
+            # Dynamically set router address based on network
+            router_address = self.config.get('router_address', "0x95a7e403d7cF20F675fF9273D66e94d35ba49fA3")
             router = self._web3.eth.contract(
                 address=router_address,
-                abi=self.ROUTER_ABI
+                abi=SONIC_ABI
             )
 
-            token_contract = self._web3.eth.contract(
-                address=Web3.to_checksum_address(token_in),
-                abi=self.ERC20_ABI
-            )
-            decimals = token_contract.functions.decimals().call()
-            amount_in = int(amount * (10 ** decimals))
-            
-            amounts_out = router.functions.getAmountsOut(
-                amount_in,
-                [Web3.to_checksum_address(token_in), Web3.to_checksum_address(token_out)]
-            ).call()
-            min_amount_out = int(amounts_out[1] * (1 - slippage/100))
+            # Check and set allowance
+            allowance = token_contract_in.functions.allowance(account.address, router_address).call()
 
-            # Approve router if needed
-            allowance = token_contract.functions.allowance(account.address, router_address).call()
+            # If allowance is insufficient, approve
             if allowance < amount_in:
-                approve_tx = token_contract.functions.approve(
+                approve_tx = token_contract_in.functions.approve(
                     router_address,
                     amount_in
                 ).build_transaction({
                     'from': account.address,
                     'nonce': self._web3.eth.get_transaction_count(account.address),
-                    'gasPrice': self._web3.eth.gas_price
+                    'gasPrice': self._web3.eth.gas_price,
+                    'chainId': self._web3.eth.chain_id
                 })
-                signed = account.sign_transaction(approve_tx)
-                tx_hash = self._web3.eth.send_raw_transaction(signed.rawTransaction)
-                self._web3.eth.wait_for_transaction_receipt(tx_hash)
+                
+                signed_approve = account.sign_transaction(approve_tx)
+                approve_tx_hash = self._web3.eth.send_raw_transaction(signed_approve.rawTransaction)
+
+            # Get expected output amount
+            amounts_out = router.functions.getAmountsOut(
+                amount_in,
+                [Web3.to_checksum_address(token_in), Web3.to_checksum_address(token_out)]
+            ).call()
+            min_amount_out = int(amounts_out[1] * (1 - slippage/100))
 
             # Build swap transaction
             deadline = self._web3.eth.get_block('latest')['timestamp'] + 1200
@@ -260,9 +276,11 @@ class SonicConnection(BaseConnection):
             ).build_transaction({
                 'from': account.address,
                 'nonce': self._web3.eth.get_transaction_count(account.address),
-                'gasPrice': self._web3.eth.gas_price
+                'gasPrice': self._web3.eth.gas_price,
+                'chainId': self._web3.eth.chain_id
             })
 
+            # Sign and send transaction
             signed = account.sign_transaction(swap_tx)
             tx_hash = self._web3.eth.send_raw_transaction(signed.rawTransaction)
             
@@ -271,7 +289,11 @@ class SonicConnection(BaseConnection):
 
         except Exception as e:
             logger.error(f"Swap failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             raise
+
+        
 
     def perform_action(self, action_name: str, kwargs) -> Any:
         """Execute a Sonic action with validation"""
@@ -293,77 +315,3 @@ class SonicConnection(BaseConnection):
         method_name = action_name.replace('-', '_')
         method = getattr(self, method_name)
         return method(**kwargs)
-
-    # Standard token interface ABI
-    ERC20_ABI = [
-        {
-            "constant": True,
-            "inputs": [{"name": "_owner", "type": "address"}],
-            "name": "balanceOf",
-            "outputs": [{"name": "balance", "type": "uint256"}],
-            "type": "function"
-        },
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "decimals",
-            "outputs": [{"name": "", "type": "uint8"}],
-            "type": "function"
-        },
-        {
-            "constant": False,
-            "inputs": [
-                {"name": "_to", "type": "address"},
-                {"name": "_value", "type": "uint256"}
-            ],
-            "name": "transfer",
-            "outputs": [{"name": "", "type": "bool"}],
-            "type": "function"
-        },
-        {
-            "constant": True,
-            "inputs": [
-                {"name": "_owner", "type": "address"},
-                {"name": "_spender", "type": "address"}
-            ],
-            "name": "allowance",
-            "outputs": [{"name": "", "type": "uint256"}],
-            "type": "function"
-        },
-        {
-            "constant": False,
-            "inputs": [
-                {"name": "_spender", "type": "address"},
-                {"name": "_value", "type": "uint256"}
-            ],
-            "name": "approve",
-            "outputs": [{"name": "", "type": "bool"}],
-            "type": "function"
-        }
-    ]
-
-    ROUTER_ABI = [
-        {
-            "inputs": [
-                {"name": "amountIn", "type": "uint256"},
-                {"name": "amountOutMin", "type": "uint256"},
-                {"name": "path", "type": "address[]"},
-                {"name": "to", "type": "address"},
-                {"name": "deadline", "type": "uint256"}
-            ],
-            "name": "swapExactTokensForTokens",
-            "outputs": [{"name": "amounts", "type": "uint256[]"}],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"name": "amountIn", "type": "uint256"},
-                {"name": "path", "type": "address[]"}
-            ],
-            "name": "getAmountsOut",
-            "outputs": [{"name": "amounts", "type": "uint256[]"}],
-            "stateMutability": "view",
-            "type": "function"
-        }
-    ]
