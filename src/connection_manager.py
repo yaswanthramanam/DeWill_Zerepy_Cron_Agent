@@ -11,6 +11,7 @@ from src.connections.echochambers_connection import EchochambersConnection
 from src.connections.solana_connection import SolanaConnection
 from src.connections.hyperbolic_connection import HyperbolicConnection
 from src.connections.galadriel_connection import GaladrielConnection
+from src.connections.sonic_connection import SonicConnection
 
 logger = logging.getLogger("connection_manager")
 
