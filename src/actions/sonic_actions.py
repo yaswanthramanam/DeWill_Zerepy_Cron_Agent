@@ -7,7 +7,7 @@ logger = logging.getLogger("actions.sonic_actions")
 
 @register_action("get-sonic-balance")
 def get_sonic_balance(agent, **kwargs):
-    """Get SONIC or token balance"""
+    """Get $S or token balance"""
     try:
         address = kwargs.get("address")
         token_address = kwargs.get("token_address")
@@ -27,7 +27,7 @@ def get_sonic_balance(agent, **kwargs):
         if token_address:
             logger.info(f"Token Balance: {balance}")
         else:
-            logger.info(f"SONIC Balance: {balance}")
+            logger.info(f"$S Balance: {balance}")
             
         return balance
 
@@ -37,7 +37,7 @@ def get_sonic_balance(agent, **kwargs):
 
 @register_action("send-sonic")
 def send_sonic(agent, **kwargs):
-    """Send SONIC tokens to an address"""
+    """Send $S tokens to an address"""
     try:
         to_address = kwargs.get("to_address")
         amount = float(kwargs.get("amount"))
@@ -47,12 +47,12 @@ def send_sonic(agent, **kwargs):
             amount=amount
         )
 
-        logger.info(f"Transferred {amount} SONIC to {to_address}")
+        logger.info(f"Transferred {amount} $S to {to_address}")
         logger.info(f"\nView transaction: {tx_url}")
         return tx_url
 
     except Exception as e:
-        logger.error(f"Failed to send SONIC: {str(e)}")
+        logger.error(f"Failed to send $S: {str(e)}")
         return None
 
 @register_action("send-sonic-token")
