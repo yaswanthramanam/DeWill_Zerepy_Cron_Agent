@@ -154,7 +154,7 @@ class OpenAIConnection(BaseConnection):
 
     def check_model(self, model, **kwargs):
         try:
-            client = self._get_client
+            client = self._get_client()
             try:
                 client.models.retrieve(model=model)
                 # If we get here, the model exists
