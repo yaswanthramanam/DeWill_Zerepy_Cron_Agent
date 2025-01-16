@@ -42,6 +42,8 @@ class ConnectionManager:
             return HyperbolicConnection
         elif class_name == "galadriel":
             return GaladrielConnection
+        elif class_name == "sonic":
+            return SonicConnection
 
         return None
     
