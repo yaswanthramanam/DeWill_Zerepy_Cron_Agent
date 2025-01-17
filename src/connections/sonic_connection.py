@@ -234,7 +234,7 @@ class SonicConnection(BaseConnection):
                 raise ValueError(f"Insufficient balance. Required: {amount}, Available: {balance / (10 ** decimals)}")
 
             # Dynamically set router address based on network
-            router_address = self.config.get('router_address', "0x95a7e403d7cF20F675fF9273D66e94d35ba49fA3")
+            router_address = self.config.get('router_address', "0xF5F7231073b3B41c04BA655e1a7438b1a7b29c27")
             router = self._web3.eth.contract(
                 address=router_address,
                 abi=SONIC_ABI
