@@ -10,16 +10,6 @@ from src.connections.base_connection import BaseConnection, Action, ActionParame
 
 logger = logging.getLogger("connections.sonic_connection")
 
-SONIC_NETWORKS = {
-    "mainnet": {
-        "rpc": "https://rpc.blaze.soniclabs.com",
-        "scanner": "https://sonicscan.org"
-    },
-    "testnet": {
-        "rpc": "https://testnet.rpc.blaze.soniclabs.com",  # Update this if different
-        "scanner": "https://testnet.sonicscan.org"
-    }
-}
 
 class SonicConnectionError(Exception):
     """Base exception for Sonic connection errors"""
@@ -30,14 +20,10 @@ class SonicConnection(BaseConnection):
         logger.info("Initializing Sonic connection...")
         self._web3 = None
         self.network = config.get("network", "mainnet")
+        self.explorer = config.get("scanner", "https://sonicscan.org")
+        self.rpc_url = config.get("rpc_url", "https://rpc.soniclabs.com")
+
         
-        # Get network specific configs
-        network_config = SONIC_NETWORKS[self.network]
-        self.rpc_url = network_config["rpc"]
-        self.explorer = network_config["scanner"]
-
-        config["rpc_url"] = self.rpc_url
-
         super().__init__(config)
         self._initialize_web3()
         self.ERC20_ABI = ERC20_ABI
@@ -50,8 +36,7 @@ class SonicConnection(BaseConnection):
     def _initialize_web3(self):
         """Initialize Web3 connection"""
         if not self._web3:
-            rpc_url = self.config["rpc_url"]
-            self._web3 = Web3(Web3.HTTPProvider(rpc_url))
+            self._web3 = Web3(Web3.HTTPProvider(self.rpc_url))
             self._web3.middleware_onion.inject(geth_poa_middleware, layer=0)
             if not self._web3.is_connected():
                 raise SonicConnectionError("Failed to connect to Sonic network")
@@ -67,7 +52,7 @@ class SonicConnection(BaseConnection):
         return False
 
     def validate_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        required = ["rpc_url", "network"]
+        required = ["network"]
         missing = [field for field in required if field not in config]
         if missing:
             raise ValueError(f"Missing config fields: {', '.join(missing)}")
