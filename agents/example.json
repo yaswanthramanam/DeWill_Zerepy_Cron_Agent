@@ -73,9 +73,7 @@
     },
     {
       "name": "sonic",
-      "rpc_url": "https://rpc.blaze.soniclabs.com",
-      "network": "testnet",
-      "scanner": "https://testnet.sonicscan.org"
+      "network": "testnet"
     }
   ],
   "tasks": [

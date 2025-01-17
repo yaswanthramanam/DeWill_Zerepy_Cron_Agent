@@ -5,6 +5,28 @@ from src.action_handler import register_action
 
 logger = logging.getLogger("actions.sonic_actions")
 
+@register_action("get-token-by-ticker")
+def get_token_by_ticker(agent, **kwargs):
+    """Get token address by ticker symbol"""
+    try:
+        ticker = kwargs.get("ticker")
+        if not ticker:
+            logger.error("No ticker provided")
+            return None
+            
+        token_address = agent.connection_manager.connections["sonic"].get_token_by_ticker(ticker)
+        
+        if token_address:
+            logger.info(f"Found token address for {ticker}: {token_address}")
+        else:
+            logger.info(f"No token found for ticker {ticker}")
+            
+        return token_address
+
+    except Exception as e:
+        logger.error(f"Failed to get token by ticker: {str(e)}")
+        return None
+
 @register_action("get-sonic-balance")
 def get_sonic_balance(agent, **kwargs):
     """Get $S or token balance"""
@@ -48,7 +70,7 @@ def send_sonic(agent, **kwargs):
         )
 
         logger.info(f"Transferred {amount} $S to {to_address}")
-        logger.info(f"\nView transaction: {tx_url}")
+        logger.info(f"Transaction URL: {tx_url}")
         return tx_url
 
     except Exception as e:
@@ -70,7 +92,7 @@ def send_sonic_token(agent, **kwargs):
         )
 
         logger.info(f"Transferred {amount} tokens to {to_address}")
-        logger.info(f"\nView transaction: {tx_url}")
+        logger.info(f"Transaction URL: {tx_url}")
         return tx_url
 
     except Exception as e:
@@ -79,10 +101,10 @@ def send_sonic_token(agent, **kwargs):
 
 @register_action("swap-sonic")
 def swap_sonic(agent, **kwargs):
-    """Swap tokens"""
+    """Swap tokens on Sonic chain"""
     try:
         token_in = kwargs.get("token_in")
-        token_out = kwargs.get("token_out")
+        token_out = kwargs.get("token_out") 
         amount = float(kwargs.get("amount"))
         slippage = float(kwargs.get("slippage", 0.5))
 
@@ -93,8 +115,8 @@ def swap_sonic(agent, **kwargs):
             slippage=slippage
         )
 
-        logger.info(f"Swapped {amount} tokens")
-        logger.info(f"\nView transaction: {tx_url}")
+        logger.info(f"Swapping {amount} tokens")
+        logger.info(f"Transaction URL: {tx_url}")
         return tx_url
 
     except Exception as e:
