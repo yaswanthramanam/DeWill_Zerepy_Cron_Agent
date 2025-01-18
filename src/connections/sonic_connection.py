@@ -252,7 +252,10 @@ class SonicConnection(BaseConnection):
 
             signed = account.sign_transaction(tx)
             tx_hash = self._web3.eth.send_raw_transaction(signed.rawTransaction)
-            return self._get_explorer_link(tx_hash.hex())
+
+            # Log and return explorer link immediately
+            tx_link = self._get_explorer_link(tx_hash.hex())
+            return f"\n⛓️ Transfer transaction sent: {tx_link}"
 
         except Exception as e:
             logger.error(f"Transfer failed: {e}")
