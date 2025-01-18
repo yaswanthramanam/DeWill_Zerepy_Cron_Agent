@@ -73,8 +73,8 @@ class SonicConnection(BaseConnection):
     def get_token_by_ticker(self, ticker: str) -> Optional[str]:
         """Get token address by ticker symbol"""
         try:
-            if ticker.lower() in ["s", "sonic"]:
-                return "0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38"
+            if ticker.lower() in ["s", "S"]:
+                return "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
                 
             response = requests.get(
                 f"https://api.dexscreener.com/latest/dex/search?q={ticker}"
