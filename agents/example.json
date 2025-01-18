@@ -62,18 +62,8 @@
       "model": "gpt-3.5-turbo"
     },
     {
-      "name": "evm-ethereum",
-      "rpc": "https://mainnet.infura.io/v3/79369232298d466a9aae23aef12a635b",
-      "scanner": "api.etherscan.io"
-    },
-    {
-      "name": "evm-polygon",
-      "rpc": "https://polygon-rpc.com",
-      "scanner": "api.polygonscan.com"
-    },
-    {
       "name": "sonic",
-      "network": "testnet"
+      "network": "mainnet"
     }
   ],
   "tasks": [

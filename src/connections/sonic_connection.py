@@ -374,7 +374,16 @@ class SonicConnection(BaseConnection):
             NATIVE_TOKEN = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
             private_key = os.getenv('SONIC_PRIVATE_KEY')
             account = self._web3.eth.account.from_key(private_key)
+
+            # Check token balance before proceeding
+            current_balance = self.get_balance(
+                address=account.address,
+                token_address=None if token_in.lower() == NATIVE_TOKEN.lower() else token_in
+            )
             
+            if current_balance < amount:
+                raise ValueError(f"Insufficient balance. Required: {amount}, Available: {current_balance}")
+                
             # Get optimal swap route
             route_data = self._get_swap_route(token_in, token_out, amount)
             
