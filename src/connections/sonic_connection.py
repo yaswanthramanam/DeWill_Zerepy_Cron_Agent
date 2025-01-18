@@ -18,6 +18,7 @@ class SonicConnectionError(Exception):
     pass
 
 class SonicConnection(BaseConnection):
+    
     def __init__(self, config: Dict[str, Any]):
         logger.info("Initializing Sonic connection...")
         self._web3 = None
@@ -34,6 +35,7 @@ class SonicConnection(BaseConnection):
         super().__init__(config)
         self._initialize_web3()
         self.ERC20_ABI = ERC20_ABI
+        self.NATIVE_TOKEN = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
         self.aggregator_api = "https://aggregator-api.kyberswap.com/sonic/api/v1"
 
     def _get_explorer_link(self, tx_hash: str) -> str:
@@ -265,10 +267,9 @@ class SonicConnection(BaseConnection):
         """Get the best swap route from Kyberswap API"""
         try:
             # Handle native token address
-            NATIVE_TOKEN = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
             
             # Convert amount to raw value
-            if token_in.lower() == NATIVE_TOKEN.lower():
+            if token_in.lower() == self.NATIVE_TOKEN.lower():
                 amount_raw = self._web3.to_wei(amount_in, 'ether')
             else:
                 token_contract = self._web3.eth.contract(
@@ -374,14 +375,13 @@ class SonicConnection(BaseConnection):
     def swap(self, token_in: str, token_out: str, amount: float, slippage: float = 0.5) -> str:
         """Execute a token swap using the KyberSwap router"""
         try:
-            NATIVE_TOKEN = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
             private_key = os.getenv('SONIC_PRIVATE_KEY')
             account = self._web3.eth.account.from_key(private_key)
 
             # Check token balance before proceeding
             current_balance = self.get_balance(
                 address=account.address,
-                token_address=None if token_in.lower() == NATIVE_TOKEN.lower() else token_in
+                token_address=None if token_in.lower() == self.NATIVE_TOKEN.lower() else token_in
             )
             
             if current_balance < amount:
@@ -397,7 +397,7 @@ class SonicConnection(BaseConnection):
             router_address = route_data["routerAddress"]
             
             # Handle token approval if not using native token
-            if token_in.lower() != NATIVE_TOKEN.lower():
+            if token_in.lower() != self.NATIVE_TOKEN.lower():
                 if token_in.lower() == "0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38".lower():  # $S token
                     amount_raw = self._web3.to_wei(amount, 'ether')
                 else:
@@ -417,7 +417,7 @@ class SonicConnection(BaseConnection):
                 'nonce': self._web3.eth.get_transaction_count(account.address),
                 'gasPrice': self._web3.eth.gas_price,
                 'chainId': self._web3.eth.chain_id,
-                'value': self._web3.to_wei(amount, 'ether') if token_in.lower() == NATIVE_TOKEN.lower() else 0
+                'value': self._web3.to_wei(amount, 'ether') if token_in.lower() == self.NATIVE_TOKEN.lower() else 0
             }
             
             # Estimate gas
