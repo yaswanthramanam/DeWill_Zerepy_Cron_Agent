@@ -13,6 +13,7 @@ from src.connections.solana_connection import SolanaConnection
 from src.connections.hyperbolic_connection import HyperbolicConnection
 from src.connections.galadriel_connection import GaladrielConnection
 from src.connections.discord_connection import DiscordConnection
+from src.connections.allora_connection import AlloraConnection
 
 logger = logging.getLogger("connection_manager")
 
@@ -49,7 +50,8 @@ class ConnectionManager:
             return GaladrielConnection
         elif class_name == "discord":
             return DiscordConnection
-
+        elif class_name == "allora":
+            return AlloraConnection
         return None
 
     def _register_connection(self, config_dic: Dict[str, Any]) -> None:
