@@ -83,8 +83,8 @@
       "chain_slug": "testnet"
     },
     {
-      "name": "evm",
-      "network": "ethereum"  
+      "name": "ethereum",
+      "rpc": "https://eth.blockrazor.xyz"  
     }
   ],
   "tasks": [

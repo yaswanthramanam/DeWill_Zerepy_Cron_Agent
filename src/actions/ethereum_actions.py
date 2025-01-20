@@ -98,3 +98,12 @@ def send_eth_token(agent, **kwargs):
     except Exception as e:
         logger.error(f"Failed to send tokens: {str(e)}")
         return None
+
+@register_action("get-address")
+def get_address(agent, **kwargs):
+    """Get configured Ethereum wallet address"""
+    try:
+        return agent.connection_manager.connections["ethereum"].get_address()
+    except Exception as e:
+        logger.error(f"Failed to get address: {str(e)}")
+        return None

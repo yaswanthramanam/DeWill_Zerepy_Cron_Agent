@@ -11,7 +11,7 @@ SONIC_NETWORKS = {
 
 EVM_NETWORKS = {
     "ethereum": {
-        "rpc_url": "https://eth.drpc.org",
+        "rpc_url": "https://ethereum-rpc.publicnode.com",
         "scanner_url": "etherscan.io",
         "chain_id": 1
     },
