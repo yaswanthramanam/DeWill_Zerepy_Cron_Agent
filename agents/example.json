@@ -83,6 +83,10 @@
       "chain_slug": "testnet"
     },
     {
+      "name": "ethereum",
+      "rpc": "https://eth.blockrazor.xyz"  
+    },
+    {
       "name": "discord",
       "message_read_count": 10,
       "message_emoji_name": "❤️",
