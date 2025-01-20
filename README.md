@@ -1,6 +1,6 @@
 # ZerePy
 
-ZerePy is an open-source Python framework designed to let you deploy your own agents on X, powered by OpenAI/Anthropic/EternalAI LLMs.
+ZerePy is an open-source Python framework designed to let you deploy your own agents on X, powered by multiple LLMs.
 
 ZerePy is built from a modularized version of the Zerebro backend. With ZerePy, you can launch your own agent with
 similar core functionality as Zerebro. For creative outputs, you'll need to fine-tune your own model.
@@ -121,7 +121,12 @@ poetry run python main.py
    configure-connection solana     # For Solana
    configure-connection goat       # For Goat
    configure-connection galadriel  # For Galadriel
-   configure-connection ethereum # For Ethereum
+   configure-connection ethereum   # For Ethereum
+   configure-connection discord    # For Discord
+   configure-connection ollama     # For Ollama
+   configure-connection xai        # For Grok
+   configure-connection allora     # For Allora
+   configure-connection hyperbolic # For Hyperbolic
    ```
 
 2. Use `list-connections` to see all available connections and their status
