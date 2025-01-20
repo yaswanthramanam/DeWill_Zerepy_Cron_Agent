@@ -33,6 +33,7 @@ similar core functionality as Zerebro. For creative outputs, you'll need to fine
 - Ollama
 - Hyperbolic
 - Galadriel
+- XAI (Grok)
 
 ## Quickstart
 
