@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from src.action_handler import register_action
 
-logger = logging.getLogger("actions.evm_actions")
+logger = logging.getLogger("actions.ethereum_actions")
 
 @register_action("get-token-by-ticker")
 def get_token_by_ticker(agent, **kwargs):
@@ -14,7 +14,7 @@ def get_token_by_ticker(agent, **kwargs):
             logger.error("No ticker provided")
             return None
             
-        token_address = agent.connection_manager.connections["evm"].get_token_by_ticker(ticker)
+        token_address = agent.connection_manager.connections["ethereum"].get_token_by_ticker(ticker)
         
         if token_address:
             logger.info(f"Found token address for {ticker}: {token_address}")
@@ -27,8 +27,8 @@ def get_token_by_ticker(agent, **kwargs):
         logger.error(f"Failed to get token by ticker: {str(e)}")
         return None
 
-@register_action("get-evm-balance")
-def get_evm_balance(agent, **kwargs):
+@register_action("get-eth-balance")
+def get_eth_balance(agent, **kwargs):
     """Get native or token balance"""
     try:
         address = kwargs.get("address")
@@ -36,12 +36,12 @@ def get_evm_balance(agent, **kwargs):
         
         if not address:
             load_dotenv()
-            private_key = os.getenv('EVM_PRIVATE_KEY')
-            web3 = agent.connection_manager.connections["evm"]._web3
+            private_key = os.getenv('ETH_PRIVATE_KEY')
+            web3 = agent.connection_manager.connections["ethereum"]._web3
             account = web3.eth.account.from_key(private_key)
             address = account.address
 
-        balance = agent.connection_manager.connections["evm"].get_balance(
+        balance = agent.connection_manager.connections["ethereum"].get_balance(
             address=address,
             token_address=token_address
         )
@@ -57,19 +57,19 @@ def get_evm_balance(agent, **kwargs):
         logger.error(f"Failed to get balance: {str(e)}")
         return None
 
-@register_action("send-evm")
-def send_evm(agent, **kwargs):
+@register_action("send-eth")
+def send_eth(agent, **kwargs):
     """Send native tokens to an address"""
     try:
         to_address = kwargs.get("to_address")
         amount = float(kwargs.get("amount"))
 
-        tx_url = agent.connection_manager.connections["evm"].transfer(
+        tx_url = agent.connection_manager.connections["ethereum"].transfer(
             to_address=to_address,
             amount=amount
         )
 
-        logger.info(f"Transferred {amount} native tokens to {to_address}")
+        logger.info(f"Transferred {amount} native ETH tokens to {to_address}")
         logger.info(f"Transaction URL: {tx_url}")
         return tx_url
 
@@ -77,15 +77,15 @@ def send_evm(agent, **kwargs):
         logger.error(f"Failed to send native tokens: {str(e)}")
         return None
 
-@register_action("send-evm-token")
-def send_evm_token(agent, **kwargs):
+@register_action("send-eth-token")
+def send_eth_token(agent, **kwargs):
     """Send ERC20 tokens"""
     try:
         to_address = kwargs.get("to_address")
         token_address = kwargs.get("token_address")
         amount = float(kwargs.get("amount"))
 
-        tx_url = agent.connection_manager.connections["evm"].transfer(
+        tx_url = agent.connection_manager.connections["ethereum"].transfer(
             to_address=to_address,
             amount=amount,
             token_address=token_address

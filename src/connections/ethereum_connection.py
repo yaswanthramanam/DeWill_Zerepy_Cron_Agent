@@ -6,18 +6,18 @@ from typing import Dict, Any, Optional
 from dotenv import load_dotenv, set_key
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from src.constants.networks import EVM_NETWORKS
+from src.constants.networks import Ethereum_NETWORKS
 from src.connections.base_connection import BaseConnection, Action, ActionParameter
 
-logger = logging.getLogger("connections.evm_connection")
+logger = logging.getLogger("connections.ethereum_connection")
 
-class EVMConnectionError(Exception):
-    """Base exception for EVM connection errors"""
+class EthereumConnectionError(Exception):
+    """Base exception for Ethereum connection errors"""
     pass
 
-class EVMConnection(BaseConnection):
+class EthereumConnection(BaseConnection):
     def __init__(self, config: Dict[str, Any]):
-        logger.info("Initializing EVM connection...")
+        logger.info("Initializing Ethereum connection...")
         self._web3 = None
         
         # Get network configuration
@@ -25,7 +25,7 @@ class EVMConnection(BaseConnection):
         if network not in EVM_NETWORKS:
             raise ValueError(f"Invalid network '{network}'. Must be one of: {', '.join(EVM_NETWORKS.keys())}")
             
-        network_config = EVM_NETWORKS[network]
+        network_config = EVM_NETWORKS["ethereum"]
         self.rpc_url = network_config["rpc_url"]
         self.scanner_url = network_config["scanner_url"]
         self.chain_id = network_config["chain_id"]
@@ -73,11 +73,11 @@ class EVMConnection(BaseConnection):
             self._web3 = Web3(Web3.HTTPProvider(self.rpc_url))
             self._web3.middleware_onion.inject(geth_poa_middleware, layer=0)
             if not self._web3.is_connected():
-                raise EVMConnectionError("Failed to connect to EVM network")
+                raise EthereumConnectionError("Failed to connect to Ethereum network")
             
             try:
                 chain_id = self._web3.eth.chain_id
-                logger.info(f"Connected to EVM network with chain ID: {chain_id}")
+                logger.info(f"Connected to Ethereum network with chain ID: {chain_id}")
             except Exception as e:
                 logger.warning(f"Could not get chain ID: {e}")
 
@@ -86,7 +86,7 @@ class EVMConnection(BaseConnection):
         return False
 
     def validate_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate EVM configuration from JSON"""
+        """Validate Ethereum configuration from JSON"""
         if "network" not in config:
             raise ValueError("Missing 'network' in config")
         if config["network"] not in EVM_NETWORKS:
@@ -94,7 +94,7 @@ class EVMConnection(BaseConnection):
         return config
 
     def register_actions(self) -> None:
-        """Register available EVM actions"""
+        """Register available Ethereum actions"""
         self.actions = {
             "get-token-by-ticker": Action(
                 name="get-token-by-ticker",
@@ -133,9 +133,9 @@ class EVMConnection(BaseConnection):
         }
 
     def configure(self) -> bool:
-        logger.info("\n⛓️ EVM CHAIN SETUP")
+        logger.info("\n⛓️ ETH SETUP")
         if self.is_configured():
-            logger.info("EVM connection is already configured")
+            logger.info("Ethereum connection is already configured")
             response = input("Do you want to reconfigure? (y/n): ")
             if response.lower() != 'y':
                 return True
@@ -151,12 +151,12 @@ class EVMConnection(BaseConnection):
             
             scanner_api_key = input("\nEnter your Explorer API key (optional): ")
             
-            set_key('.env', 'EVM_PRIVATE_KEY', private_key)
+            set_key('.env', 'ETH_PRIVATE_KEY', private_key)
             if scanner_api_key:
                 set_key('.env', f"{self.config['network'].upper()}_SCAN_API_KEY", scanner_api_key)
 
             if not self._web3.is_connected():
-                raise EVMConnectionError("Failed to connect to EVM network")
+                raise EthereumConnectionError("Failed to connect to ETH network")
 
             account = self._web3.eth.account.from_key(private_key)
             logger.info(f"\n✅ Successfully connected with address: {account.address}")
@@ -169,14 +169,14 @@ class EVMConnection(BaseConnection):
     def is_configured(self, verbose: bool = False) -> bool:
         try:
             load_dotenv()
-            if not os.getenv('EVM_PRIVATE_KEY'):
+            if not os.getenv('ETH_PRIVATE_KEY'):
                 if verbose:
-                    logger.error("Missing EVM_PRIVATE_KEY in .env")
+                    logger.error("Missing ETH_PRIVATE_KEY in .env")
                 return False
 
             if not self._web3.is_connected():
                 if verbose:
-                    logger.error("Not connected to EVM network")
+                    logger.error("Not connected to ETH network")
                 return False
             return True
 
@@ -224,9 +224,9 @@ class EVMConnection(BaseConnection):
         """Get balance for an address or the configured wallet"""
         try:
             if not address:
-                private_key = os.getenv('EVM_PRIVATE_KEY')
+                private_key = os.getenv('ETH_PRIVATE_KEY')
                 if not private_key:
-                    raise EVMConnectionError("No wallet configured")
+                    raise ETHConnectionError("No wallet configured")
                 account = self._web3.eth.account.from_key(private_key)
                 address = account.address
 
@@ -249,7 +249,7 @@ class EVMConnection(BaseConnection):
     def transfer(self, to_address: str, amount: float, token_address: Optional[str] = None) -> str:
         """Transfer native tokens or ERC20 tokens to an address"""
         try:
-            private_key = os.getenv('EVM_PRIVATE_KEY')
+            private_key = os.getenv('ETH_PRIVATE_KEY')
             account = self._web3.eth.account.from_key(private_key)
             
             if token_address:
@@ -326,7 +326,7 @@ class EVMConnection(BaseConnection):
     def _get_encoded_swap_data(self, route_data: Dict, slippage: float = 0.5) -> str:
         """Get encoded swap data from aggregator API"""
         try:
-            private_key = os.getenv('EVM_PRIVATE_KEY')
+            private_key = os.getenv('ETH_PRIVATE_KEY')
             account = self._web3.eth.account.from_key(private_key)
             
             url = f"{self.aggregator_api}/build"
@@ -353,7 +353,7 @@ class EVMConnection(BaseConnection):
     def _handle_token_approval(self, token_address: str, spender_address: str, amount: int) -> None:
         """Handle token approval for spender"""
         try:
-            private_key = os.getenv('EVM_PRIVATE_KEY')
+            private_key = os.getenv('ETH_PRIVATE_KEY')
             account = self._web3.eth.account.from_key(private_key)
             
             token_contract = self._web3.eth.contract(
@@ -392,7 +392,7 @@ class EVMConnection(BaseConnection):
     def swap(self, token_in: str, token_out: str, amount: float, slippage: float = 0.5) -> str:
         """Execute a token swap using the KyberSwap router"""
         try:
-            private_key = os.getenv('SONIC_PRIVATE_KEY')
+            private_key = os.getenv('ETH_PRIVATE_KEY')
             account = self._web3.eth.account.from_key(private_key)
 
             # Check token balance before proceeding
