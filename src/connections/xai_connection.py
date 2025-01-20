@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Dict, Any
 from openai import OpenAI
+from dotenv import set_key, load_dotenv
 from src.connections.base_connection import BaseConnection, Action, ActionParameter
 
 logger = logging.getLogger("connections.XAI_connection")
@@ -102,7 +103,7 @@ class XAIConnection(BaseConnection):
             set_key('.env', 'XAI_API_KEY', api_key)
             
             # Validate the API key by trying to list models
-            client = self._get_client()
+            client = OpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
             client.models.list()
 
             logger.info("\n✅ XAI API configuration successfully saved!")
