@@ -15,6 +15,7 @@ from src.connections.galadriel_connection import GaladrielConnection
 from src.connections.discord_connection import DiscordConnection
 from src.connections.allora_connection import AlloraConnection
 from src.connections.xai_connection import XAIConnection
+from src.connections.ethereum_connection import EthereumConnection
 
 logger = logging.getLogger("connection_manager")
 
@@ -55,6 +56,8 @@ class ConnectionManager:
             return AlloraConnection
         elif class_name == "xai":
             return XAIConnection
+        elif class_name == "ethereum":
+            return EthereumConnection
         return None
 
     def _register_connection(self, config_dic: Dict[str, Any]) -> None:
