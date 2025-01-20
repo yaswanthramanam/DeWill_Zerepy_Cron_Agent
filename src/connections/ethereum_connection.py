@@ -183,10 +183,6 @@ class EthereumConnection(BaseConnection):
             # Test account access
             account = self._web3.eth.account.from_key(private_key)
             balance = self._web3.eth.get_balance(account.address)
-            
-            if verbose:
-                logger.info(f"Connected successfully with address: {account.address}")
-                logger.info(f"Current balance: {self._web3.from_wei(balance, 'ether')} ETH")
                 
             return True
 
@@ -247,12 +243,10 @@ class EthereumConnection(BaseConnection):
                 
             address = self._get_token_address(ticker)
             if address:
-                return f"Token: {ticker.upper()}\nAddress: {address}"
-                
-            return f"No token found for ticker {ticker}"
+                return address
 
         except Exception as error:
-            return f"Error fetching token: {str(error)}"
+            return False
 
     def _get_raw_balance(self, address: str, token_address: Optional[str] = None) -> float:
         """Helper function to get raw balance value"""
@@ -266,26 +260,73 @@ class EthereumConnection(BaseConnection):
                 Web3.to_checksum_address(address)
             ).call()
             decimals = contract.functions.decimals().call()
-            return balance / (10 ** decimals)
+            return balanqce / (10 ** decimals)
         else:
             # Get native ETH balance
             balance = self._web3.eth.get_balance(Web3.to_checksum_address(address))
             return self._web3.from_wei(balance, 'ether')
 
-    def get_balance(self, address: Optional[str] = None, token_address: Optional[str] = None) -> str:
+    def get_balance(self, token_address: str | None = None) -> float:
+        """
+        Get  balance and value for the configured wallet.
+        
+        Args:
+            token_address (str, optional): Address of the token contract. 
+                                        If None, uses the native token (ETH).
+        
+        Returns:
+            float: Balance information
+        """
         try:
-            if not address:
-                private_key = os.getenv('ETH_PRIVATE_KEY')
-                account = self._web3.eth.account.from_key(private_key)
-                address = account.address
-
-            balance = self._get_raw_balance(address, token_address)
-            token_type = "ETH" if not token_address else f"Token {token_address}"
+            # Get wallet address from private key
+            private_key = os.getenv('ETH_PRIVATE_KEY')
+            if not private_key:
+                return "No wallet private key configured in .env"
             
-            return f"Balance for {address[:6]}...{address[-4:]}: {balance:.8f} {token_type}"
-
+            account = self._web3.eth.account.from_key(private_key)
+            
+            # If no token address provided, use native token (ETH)
+            if token_address is None:
+                # Get native token (ETH) balance
+                raw_balance = self._web3.eth.get_balance(account.address)
+                return self._web3.from_wei(raw_balance, 'ether')
+            
+            # Get token contract
+            token_contract = self._web3.eth.contract(
+                address=Web3.to_checksum_address(token_address), 
+                abi=ERC20_ABI 
+            )
+            
+            # Get token info
+            symbol = token_contract.functions.symbol().call()
+            decimals = token_contract.functions.decimals().call()
+            
+            # Get balance
+            raw_balance = token_contract.functions.balanceOf(account.address).call()
+            token_balance = raw_balance / (10 ** decimals)
+            
+            # Try to get ETH value using Kyberswap price API
+            try:
+                kyber_url = f"{self.aggregator_api}/tokens/rates"
+                response = requests.get(kyber_url, params={
+                    "tokenIn": token_address, 
+                    "tokenOut": self.NATIVE_TOKEN, 
+                    "amount": str(raw_balance) 
+                })
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    eth_value = float(data.get("data", {}).get("amountOut", 0))
+                    eth_value = self._web3.from_wei(eth_value, 'ether')
+                    return token_balance
+            except Exception:
+                # Silently fail price check
+                pass
+            
+            return token_balance
+        
         except Exception as e:
-            return f"Failed to get balance: {str(e)}"
+            return False
 
     def _prepare_transfer_tx(
         self, 
@@ -362,7 +403,6 @@ class EthereumConnection(BaseConnection):
             
             # Return explorer link
             tx_url = self._get_explorer_link(tx_hash.hex())
-            logger.info(f"Transfer transaction sent: {tx_url}")
             return tx_url
 
         except Exception as e:
@@ -579,16 +619,10 @@ class EthereumConnection(BaseConnection):
             swap_tx = self._build_swap_tx(token_in, token_out, amount, slippage, route_data)
             signed_tx = account.sign_transaction(swap_tx)
             tx_hash = self._web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
-            # Get updated balances after swap
-            new_balance_in = self.get_balance(token_address=None if token_in.lower() == self.NATIVE_TOKEN.lower() else token_in)
-            new_balance_out = self.get_balance(token_address=None if token_out.lower() == self.NATIVE_TOKEN.lower() else token_out)
 
             tx_url = self._get_explorer_link(tx_hash.hex())
             
-            return (f"\nSwap completed:\n"
-                    f"Input token: {balance_in:.8f} -> {new_balance_in:.8f}\n"
-                    f"Output token: {balance_out:.8f} -> {new_balance_out:.8f}\n"
+            return (f"Swap transaction sent!(allow time for scanner to populate it):\n"
                     f"Transaction: {tx_url}")
                 
         except Exception as e:

@@ -31,15 +31,13 @@ def get_token_by_ticker(agent, **kwargs):
 def get_eth_balance(agent, **kwargs):
     """Get native or token balance"""
     try:
-        address = kwargs.get("address")
         token_address = kwargs.get("token_address")
         
-        if not address:
-            load_dotenv()
-            private_key = os.getenv('ETH_PRIVATE_KEY')
-            web3 = agent.connection_manager.connections["ethereum"]._web3
-            account = web3.eth.account.from_key(private_key)
-            address = account.address
+        load_dotenv()
+        private_key = os.getenv('ETH_PRIVATE_KEY')
+        web3 = agent.connection_manager.connections["ethereum"]._web3
+        account = web3.eth.account.from_key(private_key)
+        address = account.address
 
         balance = agent.connection_manager.connections["ethereum"].get_balance(
             address=address,
