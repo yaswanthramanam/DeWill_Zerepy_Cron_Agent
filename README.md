@@ -11,7 +11,13 @@ similar core functionality as Zerebro. For creative outputs, you'll need to fine
 
 - CLI interface for managing agents
 - Modular connection system
-- Blockchain integration with Solana
+- Blockchain integration
+
+### Onchain Activity
+
+- Solana
+- Ethereum
+- GOAT (Great Onchain Agent Toolkit)
 
 ### Social Platform Integrations
 
@@ -42,7 +48,7 @@ https://replit.com/@blormdev/ZerePy?v=1
 
 System:
 
-- Python 3.10 or higher (3.10 and 3.11 are best for beginner users)
+- Python 3.10 or higher
 - Poetry 1.5 or higher
 
 Environment Variables:
@@ -58,8 +64,8 @@ Environment Variables:
   - Farcaster: Warpcast recovery phrase
   - Echochambers: API key and endpoint
 - On-chain Integration:
-  - Solana: private key (in base58 format) for transactions
-  - RPC URL (defaults to public endpoints)
+  - Solana: private key
+  - Ethereum: private keys
 
 ## Installation
 
@@ -114,6 +120,7 @@ poetry run python main.py
    configure-connection solana     # For Solana
    configure-connection goat       # For Goat
    configure-connection galadriel  # For Galadriel
+   configure-connection ethereum # For Ethereum
    ```
 
 2. Use `list-connections` to see all available connections and their status
@@ -266,6 +273,12 @@ Each plugin has its own configuration options that can be specified in the agent
 - Query token information
 - Request testnet/devnet funds
 
+### Ethereum
+
+- Transfer ETH and ERC-20 Tokens
+- Swap tokens using Kyberswao
+- Check token balances
+
 ### Twitter/X
 
 - Post tweets from prompts
@@ -364,6 +377,10 @@ Create a new JSON file in the `agents` directory following this structure:
       "message_read_count": 10,
       "message_emoji_name": "❤️",
       "server_id": "1234567890"
+    },
+    {
+      "name": "ethereum",
+      "rpc": "placeholder_url.123"
     }
 
   ],
