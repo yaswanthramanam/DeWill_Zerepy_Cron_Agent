@@ -53,7 +53,7 @@ https://replit.com/@blormdev/ZerePy?v=1
 
 System:
 
-- Python 3.10 or higher
+- Python 3.11 or higher
 - Poetry 1.5 or higher
 
 Environment Variables:
