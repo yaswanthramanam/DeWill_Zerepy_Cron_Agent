@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import logging
 import asyncio
+import signal
+import threading
 from pathlib import Path
 from src.cli import ZerePyCLI
 
@@ -21,9 +23,32 @@ class ServerState:
     def __init__(self):
         self.cli = ZerePyCLI()
         self.agent_running = False
-        self._agent_task = None
+        self.agent_task = None
+        self._stop_event = threading.Event()
+
+    def _run_agent_loop(self):
+        """Run agent loop in a separate thread"""
+        try:
+            log_once = False
+            while not self._stop_event.is_set():
+                if self.cli.agent:
+                    try:
+                        if not log_once:
+                            logger.info("Loop logic not implemented")
+                            log_once = True
+
+                    except Exception as e:
+                        logger.error(f"Error in agent action: {e}")
+                        if self._stop_event.wait(timeout=30):
+                            break
+        except Exception as e:
+            logger.error(f"Error in agent loop thread: {e}")
+        finally:
+            self.agent_running = False
+            logger.info("Agent loop stopped")
 
     async def start_agent_loop(self):
+        """Start the agent loop in background thread"""
         if not self.cli.agent:
             raise ValueError("No agent loaded")
         
@@ -31,37 +56,23 @@ class ServerState:
             raise ValueError("Agent already running")
 
         self.agent_running = True
-        while self.agent_running:
-            try:
-                if self.cli.agent:
-                    # Run agent loop iteration
-                    self.cli.agent.loop()
-                await asyncio.sleep(self.cli.agent.loop_delay)
-            except Exception as e:
-                logger.error(f"Error in agent loop: {e}")
-                self.agent_running = False
-                raise
+        self._stop_event.clear()
+        self.agent_task = threading.Thread(target=self._run_agent_loop)
+        self.agent_task.start()
 
-    def stop_agent_loop(self):
-        self.agent_running = False
-        if self._agent_task:
-            self._agent_task.cancel()
+    async def stop_agent_loop(self):
+        """Stop the agent loop"""
+        if self.agent_running:
+            self._stop_event.set()
+            if self.agent_task:
+                self.agent_task.join(timeout=5)
+            self.agent_running = False
 
 class ZerePyServer:
     def __init__(self):
         self.app = FastAPI(title="ZerePy Server")
         self.state = ServerState()
-        self.setup_middleware()
         self.setup_routes()
-
-    def setup_middleware(self):
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
 
     def setup_routes(self):
         @self.app.get("/")
@@ -123,7 +134,8 @@ class ZerePyServer:
                 raise HTTPException(status_code=400, detail="No agent loaded")
             
             try:
-                result = self.state.cli.agent.perform_action(
+                result = await asyncio.to_thread(
+                    self.state.cli.agent.perform_action,
                     connection=action_request.connection,
                     action=action_request.action,
                     params=action_request.params
@@ -133,13 +145,13 @@ class ZerePyServer:
                 raise HTTPException(status_code=400, detail=str(e))
 
         @self.app.post("/agent/start")
-        async def start_agent(background_tasks: BackgroundTasks):
+        async def start_agent():
             """Start the agent loop"""
             if not self.state.cli.agent:
                 raise HTTPException(status_code=400, detail="No agent loaded")
             
             try:
-                background_tasks.add_task(self.state.start_agent_loop)
+                await self.state.start_agent_loop()
                 return {"status": "success", "message": "Agent loop started"}
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
@@ -148,12 +160,11 @@ class ZerePyServer:
         async def stop_agent():
             """Stop the agent loop"""
             try:
-                self.state.stop_agent_loop()
+                await self.state.stop_agent_loop()
                 return {"status": "success", "message": "Agent loop stopped"}
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
 
 def create_app():
-    """Create and configure the FastAPI app"""
     server = ZerePyServer()
     return server.app
