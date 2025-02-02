@@ -3,6 +3,7 @@ import os
 from typing import Dict, Any
 from dotenv import load_dotenv, set_key
 from together import Together
+from together.types.models import ModelObject, ModelType
 
 from src.connections.base_connection import BaseConnection, Action, ActionParameter
 
@@ -103,8 +104,7 @@ class TogetherAIConnection(BaseConnection):
             
             # Validate the API key by trying to list models
             client = Together(api_key=api_key)
-            client.list_models()
-
+            client.models.list()
             logger.info("\n✅ Together AI API configuration successfully saved!")
             logger.info("Your API key has been stored in the .env file.")
             return True
@@ -122,7 +122,7 @@ class TogetherAIConnection(BaseConnection):
                 return False
 
             client = Together(api_key=api_key)
-            client.list_models()
+            client.models.list()
             return True
             
         except Exception as e:
@@ -139,13 +139,14 @@ class TogetherAIConnection(BaseConnection):
             if not model:
                 model = self.config["model"]
 
-            completion = client.create(
+            messages = [{"role": "user", "content": prompt},{"role": "system", "content": system_prompt},] 
+
+            completion = client.chat.completions.create(
                 model=model,
-                prompt=prompt,
-                system_prompt=system_prompt,
+                messages=messages,
             )
 
-            return completion.choices[0].text
+            return completion.choices[0].message.content
             
         except Exception as e:
             raise TogetherAIAPIError(f"Text generation failed: {e}")
@@ -153,11 +154,12 @@ class TogetherAIConnection(BaseConnection):
     def check_model(self, model: str, **kwargs) -> bool:
         try:
             client = self._get_client()
-            try:
-                client.get_model(model)
-                return True
-            except Exception:
-                return False
+            models = client.models.list()
+            model_names = model_names = [
+                m.id for m in models 
+                if m.type in {ModelType.CHAT.value, ModelType.LANGUAGE.value}
+            ]
+            return model in model_names
         except Exception as e:
             raise TogetherAIAPIError(f"Checking model failed: {e}")
 
@@ -165,11 +167,11 @@ class TogetherAIConnection(BaseConnection):
         """List all available Together AI models"""
         try:
             client = self._get_client()
-            models = client.list_models().data
-            
+            models = client.models.list()
             logger.info("\nTOGETHER AI MODELS:")
-            for i, model in enumerate(models):
-                logger.info(f"{i+1}. {model['name']}")
+            for i, model in enumerate(models, start=1):
+                if model.type in {ModelType.CHAT.value, ModelType.LANGUAGE.value}:
+                    logger.info(f"{i}. {model.id}")
 
         except Exception as e:
             raise TogetherAIAPIError(f"Listing models failed: {e}")

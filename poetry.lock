@@ -294,13 +294,13 @@ files = [
 
 [[package]]
 name = "attrs"
-version = "24.3.0"
+version = "25.1.0"
 description = "Classes Without Boilerplate"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "attrs-24.3.0-py3-none-any.whl", hash = "sha256:ac96cd038792094f438ad1f6ff80837353805ac950cd2aa0e0625ef19850c308"},
-    {file = "attrs-24.3.0.tar.gz", hash = "sha256:8f5c07333d543103541ba7be0e2ce16eeee8130cb0b3f9238ab904ce1e85baff"},
+    {file = "attrs-25.1.0-py3-none-any.whl", hash = "sha256:c75a69e28a550a7e93789579c22aa26b0f5b83b75dc4e08fe092980051e1090a"},
+    {file = "attrs-25.1.0.tar.gz", hash = "sha256:1c97078a80c814273a76b2a298a932eb681c87415c11dee0a6921de7f1b02c3e"},
 ]
 
 [package.extras]
@@ -510,6 +510,17 @@ files = [
 [package.dependencies]
 construct-typing = ">=0.5.1,<0.6.0"
 sumtypes = ">=0.1a5,<0.2"
+
+[[package]]
+name = "cached-property"
+version = "2.0.1"
+description = "A decorator for caching properties in classes."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "cached_property-2.0.1-py3-none-any.whl", hash = "sha256:f617d70ab1100b7bcf6e42228f9ddcb78c676ffa167278d9f730d1c2fba69ccb"},
+    {file = "cached_property-2.0.1.tar.gz", hash = "sha256:484d617105e3ee0e4f1f58725e72a8ef9e93deee462222dbd51cd91230897641"},
+]
 
 [[package]]
 name = "cachetools"
@@ -1011,23 +1022,24 @@ test = ["pytest (>=7.0.0)", "pytest-xdist (>=2.4.0)"]
 
 [[package]]
 name = "eth-keyfile"
-version = "0.8.1"
+version = "0.9.0"
 description = "eth-keyfile: A library for handling the encrypted keyfiles used to store ethereum private keys"
 optional = false
 python-versions = "<4,>=3.8"
 files = [
-    {file = "eth_keyfile-0.8.1-py3-none-any.whl", hash = "sha256:65387378b82fe7e86d7cb9f8d98e6d639142661b2f6f490629da09fddbef6d64"},
-    {file = "eth_keyfile-0.8.1.tar.gz", hash = "sha256:9708bc31f386b52cca0969238ff35b1ac72bd7a7186f2a84b86110d3c973bec1"},
+    {file = "eth_keyfile-0.9.0-py3-none-any.whl", hash = "sha256:45d3513b6433ad885370225ba0429ed26493ba23589c5b1ca5da024765020fef"},
+    {file = "eth_keyfile-0.9.0.tar.gz", hash = "sha256:8621c35e83cbc05909d2f23dbb8a87633918733caea553ae0e298f6a06291526"},
 ]
 
 [package.dependencies]
 eth-keys = ">=0.4.0"
 eth-utils = ">=2"
+py_ecc = ">=5.2.0"
 pycryptodome = ">=3.6.6,<4"
 
 [package.extras]
-dev = ["build (>=0.9.0)", "bumpversion (>=0.5.3)", "ipython", "pre-commit (>=3.4.0)", "pytest (>=7.0.0)", "pytest-xdist (>=2.4.0)", "towncrier (>=21,<22)", "tox (>=4.0.0)", "twine", "wheel"]
-docs = ["towncrier (>=21,<22)"]
+dev = ["build (>=0.9.0)", "bump_my_version (>=0.19.0)", "ipython", "mypy (==1.10.0)", "pre-commit (>=3.4.0)", "pytest (>=7.0.0)", "pytest-xdist (>=2.4.0)", "towncrier (>=24,<25)", "tox (>=4.0.0)", "twine", "wheel"]
+docs = ["towncrier (>=24,<25)"]
 test = ["pytest (>=7.0.0)", "pytest-xdist (>=2.4.0)"]
 
 [[package]]
@@ -1298,18 +1310,19 @@ files = [
 
 [[package]]
 name = "goat-sdk"
-version = "0.1.1"
+version = "0.1.3"
 description = "Goat 🐐 (Great Onchain Agent Toolkit) is an open-source framework for connecting AI agents to any onchain app"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "goat_sdk-0.1.1-py3-none-any.whl", hash = "sha256:e8489b737ecb8b4090b704cfd3bdbd334b0bdc9117124aae97773e5ced2dcc5d"},
-    {file = "goat_sdk-0.1.1.tar.gz", hash = "sha256:c19184a8fc8001076098ba608f99a2301161752e4c57fbac4f2d587862edfd86"},
+    {file = "goat_sdk-0.1.3-py3-none-any.whl", hash = "sha256:6d0a0b7eb49b35ef4fd1b020eded26879e0a126a4874e21b46058f00698b97f0"},
+    {file = "goat_sdk-0.1.3.tar.gz", hash = "sha256:5f852a4409de413e15ee69704fe8baf335eefc704c7797f4830b2d0e5ae9f1cd"},
 ]
 
 [package.dependencies]
 asyncio = ">=3.4.1,<4.0.0"
 pydantic = ">=2.10.0,<3.0.0"
+typing-extensions = ">=4.12.2,<5.0.0"
 
 [[package]]
 name = "goat-sdk-plugin-coingecko"
@@ -1343,18 +1356,19 @@ goat-sdk-wallet-evm = ">=0.1.0,<0.2.0"
 
 [[package]]
 name = "goat-sdk-wallet-evm"
-version = "0.1.0"
+version = "0.1.1"
 description = "Goat SDK EVM wallet implementation"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "goat_sdk_wallet_evm-0.1.0-py3-none-any.whl", hash = "sha256:620dabfac380d3f678cb9466f286de766f5aefe62d49c82ee50e4528e2a59c5e"},
-    {file = "goat_sdk_wallet_evm-0.1.0.tar.gz", hash = "sha256:96454dd9fb39e28740ea12ce53506618ec511bb0a3a31ec4b1908b373118c891"},
+    {file = "goat_sdk_wallet_evm-0.1.1-py3-none-any.whl", hash = "sha256:41143367fca696e5fdd6d6b09639a691eb8f4ebebef4248531c012f3497ab1ee"},
+    {file = "goat_sdk_wallet_evm-0.1.1.tar.gz", hash = "sha256:55840ebb625a34aa4b300d52e197e4e739c33a6630952bb00cea1d27ff28c16b"},
 ]
 
 [package.dependencies]
 evmchains = ">=0.1.3,<0.2.0"
 goat-sdk = ">=0.1.0,<0.2.0"
+typing-extensions = ">=4.12.2,<5.0.0"
 
 [[package]]
 name = "goat-sdk-wallet-web3"
@@ -1934,13 +1948,13 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "openai"
-version = "1.59.7"
+version = "1.61.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.59.7-py3-none-any.whl", hash = "sha256:cfa806556226fa96df7380ab2e29814181d56fea44738c2b0e581b462c268692"},
-    {file = "openai-1.59.7.tar.gz", hash = "sha256:043603def78c00befb857df9f0a16ee76a3af5984ba40cb7ee5e2f40db4646bf"},
+    {file = "openai-1.61.0-py3-none-any.whl", hash = "sha256:e8c512c0743accbdbe77f3429a1490d862f8352045de8dc81969301eb4a4f666"},
+    {file = "openai-1.61.0.tar.gz", hash = "sha256:216f325a24ed8578e929b0f1b3fb2052165f3b04b0461818adaa51aa29c71f8a"},
 ]
 
 [package.dependencies]
@@ -2111,13 +2125,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.48"
+version = "3.0.50"
 description = "Library for building powerful interactive command lines in Python"
 optional = false
-python-versions = ">=3.7.0"
+python-versions = ">=3.8.0"
 files = [
-    {file = "prompt_toolkit-3.0.48-py3-none-any.whl", hash = "sha256:f49a827f90062e411f1ce1f854f2aedb3c23353244f8108b89283587397ac10e"},
-    {file = "prompt_toolkit-3.0.48.tar.gz", hash = "sha256:d6623ab0477a80df74e646bdbc93621143f5caf104206aa29294d53de1a03d90"},
+    {file = "prompt_toolkit-3.0.50-py3-none-any.whl", hash = "sha256:9b6427eb19e479d98acff65196a307c555eb567989e6d88ebbb1b509d9779198"},
+    {file = "prompt_toolkit-3.0.50.tar.gz", hash = "sha256:544748f3860a2623ca5cd6d2795e7a14f3d0e1c3c9728359013f79877fc89bab"},
 ]
 
 [package.dependencies]
@@ -2233,6 +2247,27 @@ files = [
     {file = "protobuf-5.29.3-py3-none-any.whl", hash = "sha256:0a18ed4a24198528f2333802eb075e59dea9d679ab7a6c5efb017a59004d849f"},
     {file = "protobuf-5.29.3.tar.gz", hash = "sha256:5da0f41edaf117bde316404bad1a486cb4ededf8e4a54891296f648e8e076620"},
 ]
+
+[[package]]
+name = "py-ecc"
+version = "7.0.1"
+description = "py-ecc: Elliptic curve crypto in python including secp256k1, alt_bn128, and bls12_381"
+optional = false
+python-versions = "<4,>=3.8"
+files = [
+    {file = "py_ecc-7.0.1-py3-none-any.whl", hash = "sha256:84a8b4d436163c83c65345a68e32f921ef6e64374a36f8e561f0455b4b08f5f2"},
+    {file = "py_ecc-7.0.1.tar.gz", hash = "sha256:557461f42e57294d734305a30faf6b8903421651871e9cdeff8d8e67c6796c70"},
+]
+
+[package.dependencies]
+cached-property = ">=1.5.1"
+eth-typing = ">=3.0.0"
+eth-utils = ">=2.0.0"
+
+[package.extras]
+dev = ["build (>=0.9.0)", "bumpversion (>=0.5.3)", "ipython", "pre-commit (>=3.4.0)", "pytest (>=7.0.0)", "pytest-xdist (>=2.4.0)", "sphinx (>=6.0.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-rtd-theme (>=1.0.0)", "towncrier (>=21,<22)", "tox (>=4.0.0)", "twine", "wheel"]
+docs = ["sphinx (>=6.0.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-rtd-theme (>=1.0.0)", "towncrier (>=21,<22)"]
+test = ["pytest (>=7.0.0)", "pytest-xdist (>=2.4.0)"]
 
 [[package]]
 name = "pyarrow"
@@ -2584,13 +2619,13 @@ files = [
 
 [[package]]
 name = "referencing"
-version = "0.36.1"
+version = "0.36.2"
 description = "JSON Referencing + Python"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "referencing-0.36.1-py3-none-any.whl", hash = "sha256:363d9c65f080d0d70bc41c721dce3c7f3e77fc09f269cd5c8813da18069a6794"},
-    {file = "referencing-0.36.1.tar.gz", hash = "sha256:ca2e6492769e3602957e9b831b94211599d2aade9477f5d44110d2530cf9aade"},
+    {file = "referencing-0.36.2-py3-none-any.whl", hash = "sha256:e8699adbbf8b5c7de96d8ffa0eb5c158b3beafce084968e2ea8bb08c6794dcd0"},
+    {file = "referencing-0.36.2.tar.gz", hash = "sha256:df2e89862cd09deabbdba16944cc3f10feb6b3e6f18e902f7cc25609a34775aa"},
 ]
 
 [package.dependencies]
@@ -2983,13 +3018,13 @@ widechars = ["wcwidth"]
 
 [[package]]
 name = "together"
-version = "1.3.11"
+version = "1.3.14"
 description = "Python client for Together's Cloud Platform!"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "together-1.3.11-py3-none-any.whl", hash = "sha256:ee86638656a6659df8af9ffe456c15bb0169672a2a149cb3f6e8bedb68d803f2"},
-    {file = "together-1.3.11.tar.gz", hash = "sha256:67330355d23c489ff88ff917c205be8ecdd3183306b1027fbcfbb099c0ec53fa"},
+    {file = "together-1.3.14-py3-none-any.whl", hash = "sha256:da3ca1247072878728b7fba69c23a7852cc32d4eec89d14c79505c0a97b9ae1c"},
+    {file = "together-1.3.14.tar.gz", hash = "sha256:9ce173fd11253dfa1a34dfcd48f77be7ed82ac643b07d96157f0f65356b9c76d"},
 ]
 
 [package.dependencies]
@@ -3409,4 +3444,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3e5d8c904bb7a381d837792c0a4b6aa314c8536e5af68382f7ff1183e093a3fc"
+content-hash = "d6e9c38e4ab1aac6bac070927d74ef5f9e3be28613928d10d84627da2eb4a5f9"
