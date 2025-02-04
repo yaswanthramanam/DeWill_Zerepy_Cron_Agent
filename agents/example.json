@@ -79,6 +79,11 @@
       ]
     },
     {
+      "name": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "temperature": 0.5
+    },
+    {
       "name": "hyperbolic",
       "model": "meta-llama/Meta-Llama-3-70B-Instruct"
     },
