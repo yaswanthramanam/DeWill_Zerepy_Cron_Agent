@@ -242,7 +242,14 @@ class ZerePyCLI:
 
     def _handle_command(self, input_string: str) -> None:
         """Parse and handle a command input"""
-        input_list = input_string.split()
+        # Use shlex to properly handle quoted strings
+        import shlex
+        try:
+            input_list = shlex.split(input_string)
+        except ValueError as e:
+            logger.error(f"Error parsing command: {e}")
+            return
+
         command_string = input_list[0].lower()
 
         try:
