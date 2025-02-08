@@ -18,6 +18,11 @@ class ActionRequest(BaseModel):
     action: str
     params: Optional[List[str]] = []
 
+class ConfigureRequest(BaseModel):
+    """Request model for configuring connections"""
+    connection: str
+    params: Optional[Dict[str, Any]] = {}
+
 class ServerState:
     """Simple state management for the server"""
     def __init__(self):
@@ -164,6 +169,46 @@ class ZerePyServer:
                 return {"status": "success", "message": "Agent loop stopped"}
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
+        
+        @self.app.post("/connections/{name}/configure")
+        async def configure_connection(name: str, config: ConfigureRequest):
+            """Configure a specific connection"""
+            if not self.state.cli.agent:
+                raise HTTPException(status_code=400, detail="No agent loaded")
+            
+            try:
+                connection = self.state.cli.agent.connection_manager.connections.get(name)
+                if not connection:
+                    raise HTTPException(status_code=404, detail=f"Connection {name} not found")
+                
+                success = connection.configure(**config.params)
+                if success:
+                    return {"status": "success", "message": f"Connection {name} configured successfully"}
+                else:
+                    raise HTTPException(status_code=400, detail=f"Failed to configure {name}")
+                    
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/connections/{name}/status")
+        async def connection_status(name: str):
+            """Get configuration status of a connection"""
+            if not self.state.cli.agent:
+                raise HTTPException(status_code=400, detail="No agent loaded")
+                
+            try:
+                connection = self.state.cli.agent.connection_manager.connections.get(name)
+                if not connection:
+                    raise HTTPException(status_code=404, detail=f"Connection {name} not found")
+                    
+                return {
+                    "name": name,
+                    "configured": connection.is_configured(verbose=True),
+                    "is_llm_provider": connection.is_llm_provider
+                }
+                
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
 
 def create_app():
     server = ZerePyServer()
