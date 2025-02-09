@@ -39,6 +39,7 @@ similar core functionality as Zerebro. For creative outputs, you'll need to fine
 - Allora
 - xAI (Grok)
 - GROQ API
+- Together AI
 
 ## Quickstart
 
@@ -66,6 +67,7 @@ Environment Variables:
   - Hyperbolic: https://app.hyperbolic.xyz
   - Galadriel: https://dashboard.galadriel.com
   - GROQ: https://console.groq.com/
+  - Together AI: https://api.together.xyz
 - Social (based on your needs):
   - X API: https://developer.x.com/en/docs/authentication/oauth-1-0a/api-key-and-secret
   - Farcaster: Warpcast recovery phrase
@@ -136,6 +138,7 @@ poetry run python main.py
    configure-connection allora     # For Allora
    configure-connection hyperbolic # For Hyperbolic
    configure-connection groq       # For GROQ
+   configure-connection together   # For Together AI
    ```
 
 2. Use `list-connections` to see all available connections and their status
