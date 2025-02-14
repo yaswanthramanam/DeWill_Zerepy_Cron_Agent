@@ -238,8 +238,8 @@ class EVMConnection(BaseConnection):
 
     def get_token_by_ticker(self, ticker: str) -> str:
         try:
-            if ticker.lower() in ["eth", "ethereum"]:
-                return f"Token: ETH\nAddress: {self.NATIVE_TOKEN}"
+            if ticker.lower() in ["eth", "ethereum", "matic"]:
+                return f"{self.NATIVE_TOKEN}"
             address = self._get_token_address(ticker)
             if address:
                 return address

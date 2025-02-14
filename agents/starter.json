@@ -36,16 +36,8 @@
        },
        {
         "name": "evm",
-        "network": "ethereum"
-       },
-       {
-        "name": "polygon",
-        "rpc": "https://polygon-rpc.com"  
-      },
-      {
-        "name": "base",
-        "rpc": "https://mainnet.base.org"  
-      }
+        "network": "polygon"
+       }
      ],
      "tasks": [
        {"name": "post-tweet", "weight": 1},
