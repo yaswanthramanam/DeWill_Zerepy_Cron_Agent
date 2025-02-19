@@ -1,10 +1,11 @@
 import os
 import logging
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Iterator
 from requests_oauthlib import OAuth1Session
 from dotenv import set_key, load_dotenv
 from src.connections.base_connection import BaseConnection, Action, ActionParameter
 from src.helpers import print_h_bar
+import json,requests
 
 logger = logging.getLogger("connections.twitter_connection")
 
@@ -91,6 +92,13 @@ class TwitterConnection(BaseConnection):
                     ActionParameter("tweet_id", True, str, "ID of the tweet to query for replies")
                 ],
                 description="Fetch tweet replies"
+            ),
+            "stream-tweets": Action(
+                name="stream-tweets",
+                parameters=[
+                    ActionParameter("filter_string", True, str, "Filter string for rules of the stream , e.g @username")
+                ],
+                description="Stream tweets and respond to them"
             )
         }
 
@@ -107,6 +115,8 @@ class TwitterConnection(BaseConnection):
             'TWITTER_USER_ID': 'user ID'
         }
 
+        optional_vars = {'TWITTER_BEARER_TOKEN'} # Bearer Token is used for streaming, Twitter premium plan is required
+
         credentials = {}
         missing = []
 
@@ -119,6 +129,9 @@ class TwitterConnection(BaseConnection):
         if missing:
             error_msg = f"Missing Twitter credentials: {', '.join(missing)}"
             raise TwitterConfigurationError(error_msg)
+        
+        for env_var in optional_vars:
+            credentials[env_var] = os.getenv(env_var)
 
         logger.debug("All required credentials found")
         return credentials
@@ -487,3 +500,77 @@ class TwitterConnection(BaseConnection):
         
         logger.info(f"Retrieved {len(replies)} replies")
         return replies
+    
+    def _bearer_oauth(self,r):
+        bearer_token = self._get_credentials().get("TWITTER_BEARER_TOKEN")
+        r.headers["Authorization"] = f"Bearer {bearer_token}"
+        r.headers["User-Agent"] = "v2FilteredStreamPython"
+        return r
+    
+
+    def _get_rules(self):
+        """Get stream rules"""
+        response = requests.get(
+            "https://api.twitter.com/2/tweets/search/stream/rules", auth=self._bearer_oauth
+        )
+        if response.status_code != 200:
+            raise Exception(
+                "Cannot get rules (HTTP {}): {}".format(response.status_code, response.text)
+            )
+        return response.json()
+    
+    def _delete_rules(self,rules) -> None:
+        """Delete stream rules"""
+        if rules is None or "data" not in rules:
+            return None
+
+        ids = list(map(lambda rule: rule["id"], rules["data"]))
+        payload = {"delete": {"ids": ids}}
+        response = requests.post(
+            "https://api.twitter.com/2/tweets/search/stream/rules",
+            auth=self._bearer_oauth,
+            json=payload
+        )
+        print("Deleted rules : ",response.text)
+        if response.status_code != 200:
+            raise Exception(
+                "Cannot delete rules (HTTP {}): {}".format(
+                    response.status_code, response.text
+                )
+            )
+    
+    def _build_rule(self, filter_string, **kwargs) -> None:
+        """Build a rule for the stream"""
+        rule = [{"value":filter_string }]
+        payload = {"add": rule}
+        response = requests.post(
+            "https://api.twitter.com/2/tweets/search/stream/rules",
+            auth=self._bearer_oauth,
+            json=payload,
+        )
+        if response.status_code != 201:
+            raise Exception(
+                "Cannot built rules (HTTP {}): {}".format(
+                    response.status_code,response.text
+                )
+            )
+        return response
+    
+    
+    def stream_tweets(self, filter_string:str,**kwargs) ->Iterator[Dict[str, Any]]:
+        """Stream tweets"""
+        rules = self._get_rules()
+        self._delete_rules(rules)
+        self._build_rule(filter_string)
+        logger.info("Starting Twitter stream")
+        try:
+            response = requests.get("https://api.twitter.com/2/tweets/search/stream", auth=self._bearer_oauth, stream=True)
+            for line in response.iter_lines():
+                if line:
+                    tweet_data = json.loads(line)['data']
+                    yield tweet_data
+        except Exception as e:
+            logger.error(f"Error streaming tweets: {str(e)}")
+            raise TwitterAPIError("Error streaming tweets") from e
+        
+    
