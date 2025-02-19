@@ -98,7 +98,7 @@ class TwitterConnection(BaseConnection):
                 parameters=[
                     ActionParameter("filter_string", True, str, "Filter string for rules of the stream , e.g @username")
                 ],
-                description="Stream tweets and respond to them"
+                description="Stream tweets based on filter rule"
             )
         }
 
@@ -516,6 +516,8 @@ class TwitterConnection(BaseConnection):
     
     def _bearer_oauth(self,r):
         bearer_token = self._get_credentials().get("TWITTER_BEARER_TOKEN")
+        if not bearer_token:
+            raise TwitterConfigurationError("Bearer token is required for streaming API access")
         r.headers["Authorization"] = f"Bearer {bearer_token}"
         r.headers["User-Agent"] = "v2FilteredStreamPython"
         return r
