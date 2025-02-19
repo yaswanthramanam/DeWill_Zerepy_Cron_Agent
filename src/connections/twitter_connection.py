@@ -333,6 +333,10 @@ class TwitterConnection(BaseConnection):
                 oauth_tokens.get('oauth_token_secret')
             }
 
+            bearer_token = input("Input Bearer Token for Twitter Streams (optional, hit Enter to skip): ").strip()
+            if bearer_token:
+                env_vars['TWITTER_BEARER_TOKEN'] = bearer_token
+
             for key, value in env_vars.items():
                 set_key('.env', key, value)
                 logger.debug(f"Saved {key} to .env")
