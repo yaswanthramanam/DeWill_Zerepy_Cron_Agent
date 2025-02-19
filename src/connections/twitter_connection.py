@@ -531,7 +531,6 @@ class TwitterConnection(BaseConnection):
             auth=self._bearer_oauth,
             json=payload
         )
-        print("Deleted rules : ",response.text)
         if response.status_code != 200:
             raise Exception(
                 "Cannot delete rules (HTTP {}): {}".format(
@@ -558,7 +557,7 @@ class TwitterConnection(BaseConnection):
     
     
     def stream_tweets(self, filter_string:str,**kwargs) ->Iterator[Dict[str, Any]]:
-        """Stream tweets"""
+        """Stream tweets. Requires Twitter Premium Plan and Bearer Token"""
         rules = self._get_rules()
         self._delete_rules(rules)
         self._build_rule(filter_string)

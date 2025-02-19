@@ -172,8 +172,6 @@ class ZerePyAgent:
             logger.info(f"{i}...")
             time.sleep(1)
 
-        execute_action(self,"respond-to-mentions") # Set up listener for mentions, requires Twitter Premium & Bearer Token
-        
         try:
             while True:
                 success = False

@@ -1,4 +1,4 @@
-import time,threading,os
+import time,threading
 from src.action_handler import register_action
 from src.helpers import print_h_bar
 from src.prompts import POST_TWEET_PROMPT, REPLY_TWEET_PROMPT
@@ -96,12 +96,8 @@ def like_tweet(agent, **kwargs):
     return False
 
 @register_action("respond-to-mentions")
-def respond_to_mentions(agent,**kwargs):
-    
-    if (os.environ.get("TWITTER_BEARER_TOKEN") is None):
-        agent.logger.warning("Twitter bearer token not found, skipping respond-to-mentions action listener")
-        return
-    
+def respond_to_mentions(agent,**kwargs): #REQUIRES TWITTER PREMIUM PLAN
+
     filter_str = f"@{agent.username} -is:retweet"
     stream_function = agent.connection_manager.perform_action(
         connection_name="twitter",
