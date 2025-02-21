@@ -14,6 +14,9 @@ logger = logging.getLogger("connections.monad_connection")
 
 # Constants specific to Monad testnet
 MONAD_BASE_GAS_PRICE = 50  # gwei - hardcoded for testnet
+MONAD_CHAIN_ID = 10143
+MONAD_SCANNER_URL = "testnet.monadexplorer.com"
+ZERO_EX_API_URL = "https://api.0x.org/swap/v2"
 
 class MonadConnectionError(Exception):
     """Base exception for Monad connection errors"""
@@ -30,8 +33,8 @@ class MonadConnection(BaseConnection):
         if not self.rpc_url:
             raise ValueError("RPC URL must be provided in config")
             
-        self.scanner_url = "testnet.monadexplorer.com"
-        self.chain_id = config.get("chain_id", 10143) 
+        self.scanner_url = MONAD_SCANNER_URL
+        self.chain_id = MONAD_CHAIN_ID
         
         super().__init__(config)
         self._initialize_web3()
@@ -111,6 +114,13 @@ class MonadConnection(BaseConnection):
             )
         }
 
+    def _get_current_account(self) -> 'LocalAccount':
+        """Get current account from private key"""
+        private_key = os.getenv('MONAD_PRIVATE_KEY')
+        if not private_key:
+            raise MonadConnectionError("No wallet private key configured")
+        return self._web3.eth.account.from_key(private_key)
+
     def configure(self) -> bool:
         """Sets up Monad wallet"""
         logger.info("\n⛓️ MONAD SETUP")
@@ -164,29 +174,30 @@ class MonadConnection(BaseConnection):
             load_dotenv()
             
             if not os.getenv('MONAD_PRIVATE_KEY'):
-                logger.error("Missing MONAD_PRIVATE_KEY in .env")
+                if verbose:
+                    logger.error("Missing MONAD_PRIVATE_KEY in .env")
                 return False
 
             if not self._web3.is_connected():
-                logger.error("Not connected to Monad network")
+                if verbose:
+                    logger.error("Not connected to Monad network")
                 return False
                 
             # Test account access
-            private_key = os.getenv('MONAD_PRIVATE_KEY')
-            account = self._web3.eth.account.from_key(private_key)
+            account = self._get_current_account()
             balance = self._web3.eth.get_balance(account.address)
                 
             return True
 
         except Exception as e:
-            logger.error(f"Configuration check failed: {e}")
+            if verbose:
+                logger.error(f"Configuration check failed: {e}")
             return False
 
     def get_address(self) -> str:
         """Get the wallet address"""
         try:
-            private_key = os.getenv('MONAD_PRIVATE_KEY')
-            account = self._web3.eth.account.from_key(private_key)
+            account = self._get_current_account()
             return f"Your Monad address: {account.address}"
         except Exception as e:
             return f"Failed to get address: {str(e)}"
@@ -194,11 +205,7 @@ class MonadConnection(BaseConnection):
     def get_balance(self, token_address: Optional[str] = None) -> float:
         """Get native or token balance for the configured wallet"""
         try:
-            private_key = os.getenv('MONAD_PRIVATE_KEY')
-            if not private_key:
-                return "No wallet private key configured in .env"
-            
-            account = self._web3.eth.account.from_key(private_key)
+            account = self._get_current_account()
             
             if token_address is None or token_address.lower() == self.NATIVE_TOKEN.lower():
                 raw_balance = self._web3.eth.get_balance(account.address)
@@ -224,8 +231,7 @@ class MonadConnection(BaseConnection):
     ) -> Dict[str, Any]:
         """Prepare transfer transaction with Monad-specific gas handling"""
         try:
-            private_key = os.getenv('MONAD_PRIVATE_KEY')
-            account = self._web3.eth.account.from_key(private_key)
+            account = self._get_current_account()
             
             # Get latest nonce
             nonce = self._web3.eth.get_transaction_count(account.address)
@@ -258,7 +264,7 @@ class MonadConnection(BaseConnection):
                     'nonce': nonce,
                     'to': Web3.to_checksum_address(to_address),
                     'value': self._web3.to_wei(amount, 'ether'),
-                    'gas': 21000,
+                    'gas': 21000,  # Standard ETH transfer gas
                     'gasPrice': gas_price,
                     'chainId': self.chain_id
                 }
@@ -277,6 +283,8 @@ class MonadConnection(BaseConnection):
     ) -> str:
         """Transfer tokens with Monad-specific balance validation"""
         try:
+            account = self._get_current_account()
+
             # Check balance including gas cost since Monad charges on gas limit
             gas_cost = Web3.to_wei(MONAD_BASE_GAS_PRICE * 21000, 'gwei')
             gas_cost_eth = float(self._web3.from_wei(gas_cost, 'ether'))
@@ -290,9 +298,6 @@ class MonadConnection(BaseConnection):
 
             # Prepare and send transaction
             tx = self._prepare_transfer_tx(to_address, amount, token_address)
-            private_key = os.getenv('MONAD_PRIVATE_KEY')
-            account = self._web3.eth.account.from_key(private_key)
-            
             signed = account.sign_transaction(tx)
             tx_hash = self._web3.eth.send_raw_transaction(signed.rawTransaction)
             
@@ -310,9 +315,10 @@ class MonadConnection(BaseConnection):
         amount: float,
         sender: str
     ) -> Dict:
-        """Get swap quote from 0x API"""
+        """Get swap quote from 0x API using v2 endpoints"""
         try:
             load_dotenv()
+            
             # Convert amount to raw value with proper decimals
             if token_in.lower() == self.NATIVE_TOKEN.lower():
                 amount_raw = self._web3.to_wei(amount, 'ether')
@@ -324,27 +330,30 @@ class MonadConnection(BaseConnection):
                 decimals = token_contract.functions.decimals().call()
                 amount_raw = int(amount * (10 ** decimals))
 
-            # The URL should match exactly
-            url = "https://api.0x.org/swap/permit2/quote"
-            
-            # Headers should match exactly
+            # Set up API request according to v2 spec
             headers = {
                 "0x-api-key": os.getenv('ZEROEX_API_KEY'),
                 "0x-version": "v2"
             }
             
-            # Parameters should match exactly
             params = {
                 "sellToken": token_in,
                 "buyToken": token_out,
                 "sellAmount": str(amount_raw),
-                "chainId": str(self.chain_id),  # Convert to string to match exact format
-                "taker": sender
+                "chainId": str(self.chain_id),
+                "taker": sender,
+                "gasPrice": str(Web3.to_wei(MONAD_BASE_GAS_PRICE, 'gwei'))
             }
 
-            response = requests.get(url, headers=headers, params=params)
+            response = requests.get(
+                f"{ZERO_EX_API_URL}/permit2/quote",
+                headers=headers,
+                params=params
+            )
             response.raise_for_status()
-            return response.json()
+            
+            data = response.json()
+            return data
 
         except Exception as e:
             logger.error(f"Failed to get swap quote: {str(e)}")
@@ -358,8 +367,7 @@ class MonadConnection(BaseConnection):
     ) -> Optional[str]:
         """Handle token approval for spender, returns tx hash if approval needed"""
         try:
-            private_key = os.getenv('MONAD_PRIVATE_KEY')
-            account = self._web3.eth.account.from_key(private_key)
+            account = self._get_current_account()
             
             token_contract = self._web3.eth.contract(
                 address=Web3.to_checksum_address(token_address),
@@ -411,10 +419,9 @@ class MonadConnection(BaseConnection):
         amount: float,
         slippage: float = 0.5
     ) -> str:
-        """Execute token swap using 0x API"""
+        """Execute token swap using 0x API with Monad-specific handling"""
         try:
-            private_key = os.getenv('MONAD_PRIVATE_KEY')
-            account = self._web3.eth.account.from_key(private_key)
+            account = self._get_current_account()
 
             # Validate balance including potential gas costs
             current_balance = self.get_balance(
@@ -423,7 +430,7 @@ class MonadConnection(BaseConnection):
             if current_balance < amount:
                 raise ValueError(f"Insufficient balance. Required: {amount}, Available: {current_balance}")
             
-            # Get swap quote
+            # Get swap quote with v2 API
             quote_data = self._get_swap_quote(
                 token_in,
                 token_out,
@@ -433,12 +440,12 @@ class MonadConnection(BaseConnection):
             
             logger.debug(f"Quote data received: {quote_data}")
 
-            # Extract transaction data from the nested structure
+            # Extract transaction data from quote
             transaction = quote_data.get("transaction")
             if not transaction or not transaction.get("to") or not transaction.get("data"):
                 raise ValueError("Invalid transaction data in quote")
                 
-            # Handle token approval if needed
+            # Handle token approval if needed for non-native tokens
             if token_in.lower() != self.NATIVE_TOKEN.lower():
                 spender_address = quote_data.get("allowanceTarget")
                 amount_raw = int(quote_data.get("sellAmount"))
@@ -450,7 +457,7 @@ class MonadConnection(BaseConnection):
                         # Wait for approval confirmation
                         self._web3.eth.wait_for_transaction_receipt(approval_hash)
             
-            # Prepare swap transaction using the nested transaction data
+            # Prepare swap transaction using quote data
             tx = {
                 'from': account.address,
                 'to': Web3.to_checksum_address(transaction["to"]),
@@ -459,8 +466,14 @@ class MonadConnection(BaseConnection):
                 'nonce': self._web3.eth.get_transaction_count(account.address),
                 'gasPrice': Web3.to_wei(MONAD_BASE_GAS_PRICE, 'gwei'),
                 'chainId': self.chain_id,
-                'gas': int(transaction.get("gas", 500000))  # Use gas from quote or fallback to 500000
             }
+
+            # Estimate gas or use quote's gas estimate
+            try:
+                tx['gas'] = int(transaction.get("gas", 0)) or self._web3.eth.estimate_gas(tx)
+            except Exception as e:
+                logger.warning(f"Gas estimation failed: {e}, using default gas limit")
+                tx['gas'] = 500000  # Default gas limit for swaps
 
             # Sign and send transaction
             signed_tx = account.sign_transaction(tx)
@@ -490,4 +503,9 @@ class MonadConnection(BaseConnection):
 
         method_name = action_name.replace('-', '_')
         method = getattr(self, method_name)
-        return method(**kwargs)
+        
+        try:
+            return method(**kwargs)
+        except Exception as e:
+            logger.error(f"Action {action_name} failed: {str(e)}")
+            raise
