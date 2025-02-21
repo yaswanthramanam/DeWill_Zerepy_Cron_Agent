@@ -112,7 +112,7 @@
     },
     {
       "name": "monad",
-      "rpc": "https://testnet.monad.xyz"
+      "rpc": "https://testnet-rpc.monad.xyz/"
     }
   ],
   "tasks": [
