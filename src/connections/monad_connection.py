@@ -345,8 +345,13 @@ class MonadConnection(BaseConnection):
                 "gasPrice": str(Web3.to_wei(MONAD_BASE_GAS_PRICE, 'gwei'))
             }
 
+            url = f"{ZERO_EX_API_URL}/permit2/quote"
+
+            logger.debug(headers)
+            logger.debug(params)
+            logger.debug(url)
             response = requests.get(
-                f"{ZERO_EX_API_URL}/permit2/quote",
+                url,
                 headers=headers,
                 params=params
             )
