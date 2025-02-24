@@ -16,7 +16,7 @@ logger = logging.getLogger("connections.monad_connection")
 MONAD_BASE_GAS_PRICE = 50  # gwei - hardcoded for testnet
 MONAD_CHAIN_ID = 10143
 MONAD_SCANNER_URL = "testnet.monadexplorer.com"
-ZERO_EX_API_URL = "https://api.0x.org/swap/v2"
+ZERO_EX_API_URL = "https://api.0x.org/swap"
 
 class MonadConnectionError(Exception):
     """Base exception for Monad connection errors"""
@@ -83,7 +83,6 @@ class MonadConnection(BaseConnection):
             "get-balance": Action(
                 name="get-balance",
                 parameters=[
-                    ActionParameter("address", False, str, "Address to check balance for (optional)"),
                     ActionParameter("token_address", False, str, "Token address (optional, native token if not provided)")
                 ],
                 description="Get native or token balance"
@@ -308,20 +307,16 @@ class MonadConnection(BaseConnection):
             logger.error(f"Transfer failed: {str(e)}")
             raise
 
-    def _get_swap_quote(
-        self,
-        token_in: str,
-        token_out: str,
-        amount: float,
-        sender: str
-    ) -> Dict:
+    def _get_swap_quote(self, token_in: str, token_out: str, amount: float, sender: str) -> Dict:
         """Get swap quote from 0x API using v2 endpoints"""
         try:
             load_dotenv()
             
-            # Convert amount to raw value with proper decimals
-            if token_in.lower() == self.NATIVE_TOKEN.lower():
+            # Use 0x API's native token identifier for ETH
+            if token_in == "0x0000000000000000000000000000000000000000" or token_in.lower() == self.NATIVE_TOKEN.lower():
                 amount_raw = self._web3.to_wei(amount, 'ether')
+                token_in = self.NATIVE_TOKEN
+                logger.debug(f"Using native token identifier: {token_in}")
             else:
                 token_contract = self._web3.eth.contract(
                     address=Web3.to_checksum_address(token_in),
@@ -341,21 +336,33 @@ class MonadConnection(BaseConnection):
                 "buyToken": token_out,
                 "sellAmount": str(amount_raw),
                 "chainId": str(self.chain_id),
-                "taker": sender,
-                "gasPrice": str(Web3.to_wei(MONAD_BASE_GAS_PRICE, 'gwei'))
+                "taker": sender
             }
 
             url = f"{ZERO_EX_API_URL}/permit2/quote"
-
+            logger.debug("\nHEADERS ")
             logger.debug(headers)
+            logger.debug("\nPARAMS ")
             logger.debug(params)
+            logger.debug("\nURL ")
             logger.debug(url)
             response = requests.get(
                 url,
                 headers=headers,
                 params=params
             )
+            logger.debug(f"\nHEADER FROM OBJECT : {response.request.headers}")
             response.raise_for_status()
+
+                # Log full response details
+            logger.info("\n=== 0x API Response ===")
+            logger.info(f"Status Code: {response.status_code}")
+            logger.info("Headers:")
+            for key, value in response.headers.items():
+                logger.info(f"{key}: {value}")
+            logger.info("\nResponse Body:")
+            logger.info(response.text)
+            logger.info("=== End Response ===\n")
             
             data = response.json()
             return data
@@ -364,74 +371,24 @@ class MonadConnection(BaseConnection):
             logger.error(f"Failed to get swap quote: {str(e)}")
             raise
 
-    def _handle_token_approval(
-        self,
-        token_address: str,
-        spender_address: str,
-        amount: int
-    ) -> Optional[str]:
-        """Handle token approval for spender, returns tx hash if approval needed"""
-        try:
-            account = self._get_current_account()
-            
-            token_contract = self._web3.eth.contract(
-                address=Web3.to_checksum_address(token_address),
-                abi=ERC20_ABI
-            )
-            
-            # Check current allowance
-            current_allowance = token_contract.functions.allowance(
-                account.address,
-                spender_address
-            ).call()
-            
-            if current_allowance < amount:
-                # Prepare approval transaction with fixed gas price
-                approve_tx = token_contract.functions.approve(
-                    spender_address,
-                    amount
-                ).build_transaction({
-                    'from': account.address,
-                    'nonce': self._web3.eth.get_transaction_count(account.address),
-                    'gasPrice': Web3.to_wei(MONAD_BASE_GAS_PRICE, 'gwei'),
-                    'chainId': self.chain_id
-                })
-                
-                # Set fixed gas for approval on Monad
-                approve_tx['gas'] = 100000  # Standard approval gas
-                
-                # Sign and send approval transaction
-                signed_approve = account.sign_transaction(approve_tx)
-                tx_hash = self._web3.eth.send_raw_transaction(signed_approve.rawTransaction)
-                
-                # Wait for approval to be mined
-                receipt = self._web3.eth.wait_for_transaction_receipt(tx_hash)
-                if receipt['status'] != 1:
-                    raise ValueError("Token approval failed")
-                
-                return tx_hash.hex()
-                
-            return None
-
-        except Exception as e:
-            logger.error(f"Token approval failed: {str(e)}")
-            raise
-
-    def swap(
-        self,
-        token_in: str,
-        token_out: str,
-        amount: float,
-        slippage: float = 0.5
-    ) -> str:
+    def swap(self, token_in: str, token_out: str, amount: float, slippage: float = 0.5) -> str:
         """Execute token swap using 0x API with Monad-specific handling"""
         try:
+            logger.debug(f"\nStarting swap with parameters:")
+            logger.debug(f"token_in: {token_in}")
+            logger.debug(f"token_out: {token_out}")
+            logger.debug(f"amount: {amount}")
+            
             account = self._get_current_account()
+            logger.debug(f"Account address: {account.address}")
 
-            # Validate balance including potential gas costs
-            current_balance = self.get_balance(
-                token_address=None if token_in.lower() == self.NATIVE_TOKEN.lower() else token_in
-            )
+            # For native token swaps, use None as token_address for balance check
+            is_native = (token_in.lower() == self.NATIVE_TOKEN.lower() or 
+                        token_in == "0x0000000000000000000000000000000000000000")
+            
+            current_balance = self.get_balance(token_address=None if is_native else token_in)
+            logger.debug(f"Current balance: {current_balance}")
+            
             if current_balance < amount:
                 raise ValueError(f"Insufficient balance. Required: {amount}, Available: {current_balance}")
             
@@ -451,7 +408,7 @@ class MonadConnection(BaseConnection):
                 raise ValueError("Invalid transaction data in quote")
                 
             # Handle token approval if needed for non-native tokens
-            if token_in.lower() != self.NATIVE_TOKEN.lower():
+            if not is_native:
                 spender_address = quote_data.get("allowanceTarget")
                 amount_raw = int(quote_data.get("sellAmount"))
                     
@@ -467,7 +424,7 @@ class MonadConnection(BaseConnection):
                 'from': account.address,
                 'to': Web3.to_checksum_address(transaction["to"]),
                 'data': transaction["data"],
-                'value': self._web3.to_wei(amount, 'ether') if token_in.lower() == self.NATIVE_TOKEN.lower() else 0,
+                'value': self._web3.to_wei(amount, 'ether') if is_native else 0,
                 'nonce': self._web3.eth.get_transaction_count(account.address),
                 'gasPrice': Web3.to_wei(MONAD_BASE_GAS_PRICE, 'gwei'),
                 'chainId': self.chain_id,
@@ -490,6 +447,59 @@ class MonadConnection(BaseConnection):
         except Exception as e:
             logger.error(f"Swap failed: {str(e)}")
             raise
+
+        def _handle_token_approval(
+            self,
+            token_address: str,
+            spender_address: str,
+            amount: int
+        ) -> Optional[str]:
+            """Handle token approval for spender, returns tx hash if approval needed"""
+            try:
+                account = self._get_current_account()
+                
+                token_contract = self._web3.eth.contract(
+                    address=Web3.to_checksum_address(token_address),
+                    abi=ERC20_ABI
+                )
+                
+                # Check current allowance
+                current_allowance = token_contract.functions.allowance(
+                    account.address,
+                    spender_address
+                ).call()
+                
+                if current_allowance < amount:
+                    # Prepare approval transaction with fixed gas price
+                    approve_tx = token_contract.functions.approve(
+                        spender_address,
+                        amount
+                    ).build_transaction({
+                        'from': account.address,
+                        'nonce': self._web3.eth.get_transaction_count(account.address),
+                        'gasPrice': Web3.to_wei(MONAD_BASE_GAS_PRICE, 'gwei'),
+                        'chainId': self.chain_id
+                    })
+                    
+                    # Set fixed gas for approval on Monad
+                    approve_tx['gas'] = 100000  # Standard approval gas
+                    
+                    # Sign and send approval transaction
+                    signed_approve = account.sign_transaction(approve_tx)
+                    tx_hash = self._web3.eth.send_raw_transaction(signed_approve.rawTransaction)
+                    
+                    # Wait for approval to be mined
+                    receipt = self._web3.eth.wait_for_transaction_receipt(tx_hash)
+                    if receipt['status'] != 1:
+                        raise ValueError("Token approval failed")
+                    
+                    return tx_hash.hex()
+                    
+                return None
+
+            except Exception as e:
+                logger.error(f"Token approval failed: {str(e)}")
+                raise
 
     def perform_action(self, action_name: str, kwargs: Dict[str, Any]) -> Any:
         """Execute a Monad action with validation"""
