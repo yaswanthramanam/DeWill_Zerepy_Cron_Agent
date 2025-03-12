@@ -1,0 +1,31 @@
+{
+  "agent_name": "DeWillRequestChecker",
+  "description": "Checks DeWill contract requests on Sonic and Monad, sends email notifications when timestamps are reached.",
+  "platforms": ["custom"],
+  "tasks": [
+    {
+      "name": "check_requests",
+      "description": "Fetch requests from Sonic and Monad contracts and notify recipients.",
+      "schedule": "every 60 seconds",
+      "script": "check_requests.py"
+    }
+  ],
+  "integrations": {
+    "sonic": {
+      "provider_url": "https://rpc.testnet.soniclabs.com",
+      "contract_address": "0xA3e276167014ce83a32eB0FF5715A8e9054753d3",
+      "abi_path": "./abi.json"
+    },
+    "monad": {
+      "provider_url": "https://rpc.monad.xyz/YOUR_MONAD_PROJECT_ID",
+      "contract_address": "0xYOUR_MONAD_CONTRACT_ADDRESS",
+      "abi_path": "./abi.json"
+    },
+    "emailjs": {
+      "service_id": "dewill",
+      "template_id": "dewill_template",
+      "user_id": "YOUR_EMAILJS_USER_ID",
+      "api_key": "utY0W0EPIytoPwfRZ"
+    }
+  }
+}
